@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2d5016">
+    <title>Golf Society Manager</title>
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Golf Society">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="screen active">
+        <div class="login-container">
+            <div class="login-header">
+                <div class="golf-icon">⛳</div>
+                <h1>Golf Society Manager</h1>
+            </div>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="signin">Sign In</button>
+                <button class="auth-tab" data-tab="signup">Sign Up</button>
+            </div>
+            
+            <div class="auth-form" id="signinForm">
+                <input type="email" id="signinEmail" placeholder="Email" autocomplete="email">
+                <input type="password" id="signinPassword" placeholder="Password" autocomplete="current-password">
+                <button id="signinBtn" class="primary-btn">Sign In</button>
+                
+                <div class="auth-divider">
+                    <span>or continue with</span>
+                </div>
+                
+                <div class="social-auth-buttons">
+                    <button id="googleSignInBtn" class="social-btn google-btn">
+                        <svg width="18" height="18" viewBox="0 0 18 18">
+                            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+                            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                            <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707 0-.593.102-1.17.282-1.709V4.958H.957C.347 6.173 0 7.548 0 9c0 1.452.348 2.827.957 4.042l3.007-2.335z"/>
+                            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+                        </svg>
+                        Google
+                    </button>
+                    
+                    <button id="appleSignInBtn" class="social-btn apple-btn">
+                        <svg width="18" height="18" viewBox="0 0 18 18">
+                            <path fill="currentColor" d="M14.94 5.19A4.38 4.38 0 0 0 13 6.75a4.37 4.37 0 0 1 1.77 3.62 4.36 4.36 0 0 1-2.66 4 11.62 11.62 0 0 1-1.14 2.34 3.28 3.28 0 0 1-2.78 1.54 3.19 3.19 0 0 1-2-.62 3.19 3.19 0 0 0-2-.62A3.44 3.44 0 0 0 2 18a11.74 11.74 0 0 1-1.36-2.65A11.75 11.75 0 0 1 0 11.07a6.42 6.42 0 0 1 1-3.52A4.7 4.7 0 0 1 4.83 5.5a5.16 5.16 0 0 1 2.15.62 7.87 7.87 0 0 0 1.52.62 9.17 9.17 0 0 0 1.51-.66 5.48 5.48 0 0 1 2.44-.63 4.74 4.74 0 0 1 2.49.74zM12.23 2a4.31 4.31 0 0 1-1.15 2.94 3.82 3.82 0 0 1-3.06 1.51 4.09 4.09 0 0 1 1.16-2.86A4.36 4.36 0 0 1 12.23 2z"/>
+                        </svg>
+                        Apple
+                    </button>
+                </div>
+            </div>
+            
+            <div class="auth-form hidden" id="signupForm">
+                <input type="text" id="signupName" placeholder="Full Name" autocomplete="name">
+                <input type="email" id="signupEmail" placeholder="Email" autocomplete="email">
+                <input type="password" id="signupPassword" placeholder="Password" autocomplete="new-password">
+                <input type="number" id="signupHandicap" placeholder="Handicap" step="0.1" min="0" max="54">
+                <button id="signupBtn" class="primary-btn">Sign Up</button>
+                
+                <div class="auth-divider">
+                    <span>or continue with</span>
+                </div>
+                
+                <div class="social-auth-buttons">
+                    <button id="googleSignUpBtn" class="social-btn google-btn">
+                        <svg width="18" height="18" viewBox="0 0 18 18">
+                            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+                            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                            <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707 0-.593.102-1.17.282-1.709V4.958H.957C.347 6.173 0 7.548 0 9c0 1.452.348 2.827.957 4.042l3.007-2.335z"/>
+                            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+                        </svg>
+                        Google
+                    </button>
+                    
+                    <button id="appleSignUpBtn" class="social-btn apple-btn">
+                        <svg width="18" height="18" viewBox="0 0 18 18">
+                            <path fill="currentColor" d="M14.94 5.19A4.38 4.38 0 0 0 13 6.75a4.37 4.37 0 0 1 1.77 3.62 4.36 4.36 0 0 1-2.66 4 11.62 11.62 0 0 1-1.14 2.34 3.28 3.28 0 0 1-2.78 1.54 3.19 3.19 0 0 1-2-.62 3.19 3.19 0 0 0-2-.62A3.44 3.44 0 0 0 2 18a11.74 11.74 0 0 1-1.36-2.65A11.75 11.75 0 0 1 0 11.07a6.42 6.42 0 0 1 1-3.52A4.7 4.7 0 0 1 4.83 5.5a5.16 5.16 0 0 1 2.15.62 7.87 7.87 0 0 0 1.52.62 9.17 9.17 0 0 0 1.51-.66 5.48 5.48 0 0 1 2.44-.63 4.74 4.74 0 0 1 2.49.74zM12.23 2a4.31 4.31 0 0 1-1.15 2.94 3.82 3.82 0 0 1-3.06 1.51 4.09 4.09 0 0 1 1.16-2.86A4.36 4.36 0 0 1 12.23 2z"/>
+                        </svg>
+                        Apple
+                    </button>
+                </div>
+            </div>
+            
+            <div id="authError" class="error-message"></div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="screen">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>⛳ Golf Society</h1>
+            <div class="header-actions">
+                <span id="userDisplayName" class="user-name"></span>
+                <button id="logoutBtn" class="icon-btn" title="Logout">🚪</button>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-btn active" data-view="calendar">
+                <span class="nav-icon">📅</span>
+                <span class="nav-label">Calendar</span>
+            </button>
+            <button class="nav-btn" data-view="events">
+                <span class="nav-icon">🏌️</span>
+                <span class="nav-label">Events</span>
+            </button>
+            <button class="nav-btn" data-view="league">
+                <span class="nav-icon">🏆</span>
+                <span class="nav-label">League</span>
+            </button>
+            <button class="nav-btn" data-view="players">
+                <span class="nav-icon">👥</span>
+                <span class="nav-label">Players</span>
+            </button>
+            <button class="nav-btn" data-view="profile">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Profile</span>
+            </button>
+        </nav>
+
+        <!-- Views -->
+        <main class="app-content">
+            <!-- Calendar View -->
+            <div id="calendarView" class="view active">
+                <div class="view-header">
+                    <h2>Event Calendar</h2>
+                    <button id="addEventBtn" class="primary-btn small">+ Add Event</button>
+                </div>
+                
+                <div class="calendar-controls">
+                    <button id="prevMonth" class="icon-btn">◀</button>
+                    <h3 id="currentMonth"></h3>
+                    <button id="nextMonth" class="icon-btn">▶</button>
+                </div>
+                
+                <div id="calendarGrid" class="calendar-grid"></div>
+                
+                <div class="upcoming-events">
+                    <h3>Upcoming Events</h3>
+                    <div id="upcomingEventsList"></div>
+                </div>
+            </div>
+
+            <!-- Events View -->
+            <div id="eventsView" class="view">
+                <div class="view-header">
+                    <h2>All Events</h2>
+                    <button id="addEventBtn2" class="primary-btn small">+ Add Event</button>
+                </div>
+                
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="all">All</button>
+                    <button class="filter-tab" data-filter="upcoming">Upcoming</button>
+                    <button class="filter-tab" data-filter="past">Past</button>
+                </div>
+                
+                <div id="eventsList" class="events-list"></div>
+            </div>
+
+            <!-- League View -->
+            <div id="leagueView" class="view">
+                <div class="view-header">
+                    <h2>League Standings</h2>
+                    <select id="leagueSeasonFilter" class="season-filter">
+                        <option value="2025">2025 Season</option>
+                        <option value="2024">2024 Season</option>
+                    </select>
+                </div>
+                
+                <div class="league-stats">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Events</div>
+                        <div class="stat-value" id="totalEvents">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Your Position</div>
+                        <div class="stat-value" id="userPosition">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Your Points</div>
+                        <div class="stat-value" id="userPoints">0</div>
+                    </div>
+                </div>
+                
+                <div id="leagueTable" class="league-table"></div>
+            </div>
+
+            <!-- Players View -->
+            <div id="playersView" class="view">
+                <div class="view-header">
+                    <h2>Players</h2>
+                    <input type="search" id="playerSearch" placeholder="Search players..." class="search-input">
+                </div>
+                
+                <div id="playersList" class="players-list"></div>
+            </div>
+
+            <!-- Profile View -->
+            <div id="profileView" class="view">
+                <div class="view-header">
+                    <h2>My Profile</h2>
+                </div>
+                
+                <div class="profile-card">
+                    <div class="profile-info">
+                        <h3 id="profileName"></h3>
+                        <p id="profileEmail"></p>
+                    </div>
+                    
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Current Handicap</span>
+                            <span class="stat-value" id="profileHandicap">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Events Played</span>
+                            <span class="stat-value" id="profileEventsPlayed">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">League Points</span>
+                            <span class="stat-value" id="profileLeaguePoints">0</span>
+                        </div>
+                    </div>
+                    
+                    <button id="editProfileBtn" class="primary-btn">Edit Profile</button>
+                </div>
+                
+                <div class="payment-history">
+                    <h3>Payment History</h3>
+                    <div id="paymentHistoryList"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Event Modal -->
+    <div id="eventModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="eventModalTitle">Add Event</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <input type="hidden" id="eventId">
+                <label>
+                    Event Name
+                    <input type="text" id="eventName" placeholder="Monthly Medal">
+                </label>
+                
+                <label>
+                    Venue
+                    <input type="text" id="eventVenue" placeholder="Royal Golf Club">
+                </label>
+                
+                <label>
+                    Date
+                    <input type="date" id="eventDate">
+                </label>
+                
+                <label>
+                    Tee Time
+                    <input type="time" id="eventTime">
+                </label>
+                
+                <label>
+                    Cost per Player (£)
+                    <input type="number" id="eventCost" placeholder="45" step="0.01">
+                </label>
+                
+                <label>
+                    Max Players
+                    <input type="number" id="eventMaxPlayers" placeholder="16">
+                </label>
+                
+                <label>
+                    Description
+                    <textarea id="eventDescription" rows="3" placeholder="Event details..."></textarea>
+                </label>
+                
+                <label class="checkbox-label">
+                    <input type="checkbox" id="eventCountsForLeague">
+                    <span>Counts for League</span>
+                </label>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="secondary-btn modal-close">Cancel</button>
+                <button id="saveEventBtn" class="primary-btn">Save Event</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Details Modal -->
+    <div id="eventDetailsModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3 id="eventDetailsTitle"></h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div id="eventDetailsContent"></div>
+                
+                <div class="event-actions">
+                    <button id="joinEventBtn" class="primary-btn">Join Event</button>
+                    <button id="leaveEventBtn" class="secondary-btn hidden">Leave Event</button>
+                    <button id="markPaidBtn" class="success-btn hidden">Mark as Paid</button>
+                </div>
+                
+                <div class="participants-section">
+                    <h4>Participants (<span id="participantCount">0</span>)</h4>
+                    <div id="participantsList"></div>
+                </div>
+                
+                <div class="scores-section">
+                    <h4>Scores</h4>
+                    <div id="scoresInput"></div>
+                    <button id="saveScoresBtn" class="primary-btn small">Save Scores</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="editProfileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Profile</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <label>
+                    Display Name
+                    <input type="text" id="editProfileName">
+                </label>
+                
+                <label>
+                    Current Handicap
+                    <input type="number" id="editProfileHandicap" step="0.1" min="0" max="54">
+                </label>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="secondary-btn modal-close">Cancel</button>
+                <button id="saveProfileBtn" class="primary-btn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Scripts -->
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+    
+    <!-- Register Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('Service Worker registered'))
+                .catch(err => console.log('Service Worker registration failed'));
+        }
+    </script>
+</body>
+</html>
