@@ -146,6 +146,12 @@ function setupEventListeners() {
     // Profile button
     document.getElementById('editProfileBtn').addEventListener('click', openEditProfileModal);
     
+    // Profile photo upload
+    document.getElementById('changePhotoBtn').addEventListener('click', () => {
+        document.getElementById('profilePhotoInput').click();
+    });
+    document.getElementById('profilePhotoInput').addEventListener('change', handleProfilePhotoUpload);
+    
     // Search
     document.getElementById('playerSearch').addEventListener('input', (e) => {
         filterPlayers(e.target.value);
@@ -1001,15 +1007,187 @@ function renderProfile() {
     firebase.database().ref(`users/${currentUser.uid}`).once('value').then(snapshot => {
         const userData = snapshot.val();
         
-        document.getElementById('profileName').textContent = userData.displayName;
-        document.getElementById('profileEmail').textContent = userData.email;
-        document.getElementById('profileHandicap').textContent = userData.handicap;
+        // Display profile photo or initials
+        updateProfilePhoto(userData);
+        
+        // Display basic info
+        document.getElementById('profileName').textContent = userData.displayName || 'Not set';
+        document.getElementById('profileEmail').textContent = userData.email || 'Not set';
+        document.getElementById('profileHandicap').textContent = userData.handicap || '-';
+        document.getElementById('profilePhone').textContent = userData.phone || 'Not set';
         document.getElementById('profileEventsPlayed').textContent = userData.eventsPlayed || 0;
         document.getElementById('profileLeaguePoints').textContent = userData.leaguePoints || 0;
         
-        // Load payment history
-        loadPaymentHistory();
+        // Format and display member since date
+        if (userData.joinedDate) {
+            const joinDate = new Date(userData.joinedDate);
+            document.getElementById('profileMemberSince').textContent = joinDate.toLocaleDateString('en-GB', { 
+                month: 'long', 
+                year: 'numeric' 
+            });
+        }
+        
+        // Calculate financial summary
+        calculateFinancialSummary();
+        
+        // Load registered events
+        loadRegisteredEvents();
     });
+}
+
+function calculateFinancialSummary() {
+    const currentYear = new Date().getFullYear();
+    
+    // Get user's events for current year
+    const userEvents = allEvents.filter(event => 
+        event.participants && 
+        event.participants[currentUser.uid] &&
+        new Date(event.date).getFullYear() === currentYear
+    );
+    
+    let totalPaid = 0;
+    let totalOwed = 0;
+    let totalCommitted = 0;
+    
+    userEvents.forEach(event => {
+        const cost = event.cost || 0;
+        totalCommitted += cost;
+        
+        if (event.participants[currentUser.uid].paid) {
+            totalPaid += cost;
+        } else {
+            totalOwed += cost;
+        }
+    });
+    
+    document.getElementById('totalPaid').textContent = `£${totalPaid.toFixed(2)}`;
+    document.getElementById('totalOwed').textContent = `£${totalOwed.toFixed(2)}`;
+    document.getElementById('totalCommitted').textContent = `£${totalCommitted.toFixed(2)}`;
+}
+
+function updateProfilePhoto(userData) {
+    const photoDisplay = document.getElementById('profilePhotoDisplay');
+    const initialsDisplay = document.getElementById('profilePhotoInitials');
+    
+    if (userData.photoData) {
+        // Show uploaded photo
+        photoDisplay.style.background = 'none';
+        photoDisplay.innerHTML = `<img src="${userData.photoData}" alt="Profile photo">`;
+    } else {
+        // Show initials
+        const initials = getInitials(userData.displayName || userData.email || 'U');
+        initialsDisplay.textContent = initials;
+        photoDisplay.style.background = 'var(--primary-blue)';
+    }
+}
+
+function loadRegisteredEvents() {
+    const container = document.getElementById('registeredEventsList');
+    
+    // Get all events where user is registered
+    const userEvents = allEvents.filter(event => 
+        event.participants && event.participants[currentUser.uid]
+    );
+    
+    // Update count
+    const currentYear = new Date().getFullYear();
+    const eventsThisYear = userEvents.filter(event => 
+        new Date(event.date).getFullYear() === currentYear
+    ).length;
+    document.getElementById('profileEventsThisYear').textContent = eventsThisYear;
+    
+    if (userEvents.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📅</div>
+                <div class="empty-state-text">No registered events yet</div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Sort by date (newest first)
+    userEvents.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    // Set up filter listeners
+    setupEventFilterListeners(userEvents);
+    
+    // Display all events by default
+    displayFilteredEvents(userEvents, 'all');
+}
+
+function setupEventFilterListeners(userEvents) {
+    const filterBtns = document.querySelectorAll('.event-filters .filter-btn');
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            displayFilteredEvents(userEvents, btn.dataset.filter);
+        });
+    });
+}
+
+function displayFilteredEvents(userEvents, filter) {
+    const container = document.getElementById('registeredEventsList');
+    const now = new Date();
+    
+    let filteredEvents = userEvents;
+    
+    if (filter === 'upcoming') {
+        filteredEvents = userEvents.filter(event => new Date(event.date) >= now);
+    } else if (filter === 'past') {
+        filteredEvents = userEvents.filter(event => new Date(event.date) < now);
+    }
+    
+    if (filteredEvents.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🏌️</div>
+                <div class="empty-state-text">No ${filter === 'all' ? '' : filter + ' '}events</div>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = filteredEvents.map(event => {
+        const participant = event.participants[currentUser.uid];
+        const isPaid = participant.paid;
+        const eventDate = new Date(event.date);
+        const isPast = eventDate < now;
+        
+        return `
+            <div class="registered-event-item">
+                <div class="registered-event-header">
+                    <span class="registered-event-name">${event.name}</span>
+                    <span class="payment-badge ${isPaid ? 'paid' : 'unpaid'}">
+                        ${isPaid ? '✓ Paid' : 'Unpaid'}
+                    </span>
+                </div>
+                <div class="registered-event-details">
+                    <span>📅 ${formatDate(eventDate)}</span>
+                    <span>📍 ${event.venue}</span>
+                    <span>💰 £${event.cost.toFixed(2)}</span>
+                    ${isPast ? '<span>✓ Completed</span>' : ''}
+                </div>
+                ${!isPaid ? `
+                    <button class="mark-paid-btn" onclick="markAsPaidFromProfile('${event.id}')">
+                        Mark as Paid
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+async function markAsPaidFromProfile(eventId) {
+    try {
+        await firebase.database().ref(`events/${eventId}/participants/${currentUser.uid}/paid`).set(true);
+        showToast('Marked as paid', 'success');
+        renderProfile(); // Refresh profile to update financial summary
+    } catch (error) {
+        showToast('Error updating payment status', 'error');
+        console.error(error);
+    }
 }
 
 function loadPaymentHistory() {
@@ -1161,6 +1339,7 @@ function openEditProfileModal() {
         const userData = snapshot.val();
         document.getElementById('editProfileName').value = userData.displayName;
         document.getElementById('editProfileHandicap').value = userData.handicap;
+        document.getElementById('editProfilePhone').value = userData.phone || '';
         
         document.getElementById('editProfileModal').classList.add('active');
     });
@@ -1253,6 +1432,7 @@ async function markAsPaid(eventId) {
 async function saveProfile() {
     const name = document.getElementById('editProfileName').value;
     const handicap = parseFloat(document.getElementById('editProfileHandicap').value);
+    const phone = document.getElementById('editProfilePhone').value;
     
     if (!name || isNaN(handicap)) {
         showToast('Please fill in all fields', 'error');
@@ -1260,10 +1440,17 @@ async function saveProfile() {
     }
     
     try {
-        await firebase.database().ref(`users/${currentUser.uid}`).update({
+        const updates = {
             displayName: name,
             handicap: handicap
-        });
+        };
+        
+        // Only add phone if it's provided
+        if (phone && phone.trim() !== '') {
+            updates.phone = phone.trim();
+        }
+        
+        await firebase.database().ref(`users/${currentUser.uid}`).update(updates);
         
         showToast('Profile updated', 'success');
         closeAllModals();
@@ -1271,6 +1458,44 @@ async function saveProfile() {
         document.getElementById('userDisplayName').textContent = name;
     } catch (error) {
         showToast('Error updating profile', 'error');
+        console.error(error);
+    }
+}
+
+async function handleProfilePhotoUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        showToast('Please select an image file', 'error');
+        return;
+    }
+    
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+        showToast('Image must be less than 2MB', 'error');
+        return;
+    }
+    
+    try {
+        showToast('Uploading photo...', 'info');
+        
+        // Convert to base64
+        const photoData = await fileToBase64(file);
+        
+        // Save to Firebase
+        await firebase.database().ref(`users/${currentUser.uid}`).update({
+            photoData: photoData
+        });
+        
+        showToast('Photo updated', 'success');
+        renderProfile();
+        
+        // Reset input
+        event.target.value = '';
+    } catch (error) {
+        showToast('Error uploading photo', 'error');
         console.error(error);
     }
 }
@@ -1323,4 +1548,13 @@ function showToast(message, type = 'info') {
 function formatDate(date) {
     const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
     return date.toLocaleDateString('en-GB', options);
+}
+
+function getInitials(name) {
+    if (!name) return 'U';
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) {
+        return parts[0].substring(0, 2).toUpperCase();
+    }
+    return parts.map(n => n[0]).join('').toUpperCase();
 }

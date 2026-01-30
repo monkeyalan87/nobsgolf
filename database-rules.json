@@ -14,6 +14,12 @@
         "handicap": {
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 54"
         },
+        "phone": {
+          ".validate": "newData.isString()"
+        },
+        "photoData": {
+          ".validate": "newData.isString()"
+        },
         "eventsPlayed": {
           ".validate": "newData.isNumber() && newData.val() >= 0"
         },

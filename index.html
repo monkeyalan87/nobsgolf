@@ -236,16 +236,40 @@
                 </div>
                 
                 <div class="profile-card">
-                    <div class="profile-info">
-                        <h3 id="profileName"></h3>
-                        <p id="profileEmail"></p>
+                    <div class="profile-photo-section">
+                        <div class="profile-photo-container">
+                            <div id="profilePhotoDisplay" class="profile-photo">
+                                <span id="profilePhotoInitials" class="profile-photo-initials"></span>
+                            </div>
+                            <button id="changePhotoBtn" class="change-photo-btn" title="Change photo">📷</button>
+                            <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="profile-info-section">
+                        <div class="profile-detail">
+                            <span class="detail-label">Name</span>
+                            <span class="detail-value" id="profileName">-</span>
+                        </div>
+                        <div class="profile-detail">
+                            <span class="detail-label">Email</span>
+                            <span class="detail-value" id="profileEmail">-</span>
+                        </div>
+                        <div class="profile-detail">
+                            <span class="detail-label">Handicap</span>
+                            <span class="detail-value" id="profileHandicap">-</span>
+                        </div>
+                        <div class="profile-detail">
+                            <span class="detail-label">Phone</span>
+                            <span class="detail-value" id="profilePhone">Not set</span>
+                        </div>
+                        <div class="profile-detail">
+                            <span class="detail-label">Member Since</span>
+                            <span class="detail-value" id="profileMemberSince">-</span>
+                        </div>
                     </div>
                     
                     <div class="profile-stats">
-                        <div class="stat-item">
-                            <span class="stat-label">Current Handicap</span>
-                            <span class="stat-value" id="profileHandicap">-</span>
-                        </div>
                         <div class="stat-item">
                             <span class="stat-label">Events Played</span>
                             <span class="stat-value" id="profileEventsPlayed">0</span>
@@ -254,14 +278,42 @@
                             <span class="stat-label">League Points</span>
                             <span class="stat-value" id="profileLeaguePoints">0</span>
                         </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Events This Year</span>
+                            <span class="stat-value" id="profileEventsThisYear">0</span>
+                        </div>
                     </div>
                     
                     <button id="editProfileBtn" class="primary-btn">Edit Profile</button>
                 </div>
                 
-                <div class="payment-history">
-                    <h3>Payment History</h3>
-                    <div id="paymentHistoryList"></div>
+                <!-- Financial Summary -->
+                <div class="financial-summary">
+                    <h3>Financial Summary</h3>
+                    <div class="financial-stats">
+                        <div class="financial-stat-item">
+                            <span class="financial-label">Total Paid This Year</span>
+                            <span class="financial-value paid" id="totalPaid">£0.00</span>
+                        </div>
+                        <div class="financial-stat-item">
+                            <span class="financial-label">Outstanding Balance</span>
+                            <span class="financial-value unpaid" id="totalOwed">£0.00</span>
+                        </div>
+                        <div class="financial-stat-item">
+                            <span class="financial-label">Total Committed</span>
+                            <span class="financial-value" id="totalCommitted">£0.00</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="registered-events-section">
+                    <h3>My Registered Events</h3>
+                    <div class="event-filters">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="upcoming">Upcoming</button>
+                        <button class="filter-btn" data-filter="past">Past</button>
+                    </div>
+                    <div id="registeredEventsList" class="registered-events-list"></div>
                 </div>
             </div>
         </main>
@@ -367,12 +419,17 @@
             <div class="modal-body">
                 <label>
                     Display Name
-                    <input type="text" id="editProfileName">
+                    <input type="text" id="editProfileName" placeholder="Your name">
                 </label>
                 
                 <label>
                     Current Handicap
-                    <input type="number" id="editProfileHandicap" step="0.1" min="0" max="54">
+                    <input type="number" id="editProfileHandicap" step="0.1" min="0" max="54" placeholder="18.0">
+                </label>
+                
+                <label>
+                    Phone Number (optional)
+                    <input type="tel" id="editProfilePhone" placeholder="07XXX XXXXXX">
                 </label>
             </div>
             
