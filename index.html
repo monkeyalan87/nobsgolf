@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#2d5016">
-    <title>Golf Society Manager</title>
+    <meta name="theme-color" content="#1f91d0">
+    <title>Northern Old Boys Society</title>
     
     <!-- PWA Meta Tags -->
     <link rel="manifest" href="manifest.json">
@@ -25,8 +25,9 @@
     <div id="loginScreen" class="screen active">
         <div class="login-container">
             <div class="login-header">
-                <div class="golf-icon">⛳</div>
-                <h1>Golf Society Manager</h1>
+                <img src="logo.jpg" alt="Northern Old Boys Society" class="login-logo">
+                <h1>Northern Old Boys Society</h1>
+                <p class="login-tagline">Manage events, track league standings & connect</p>
             </div>
             
             <div class="auth-tabs">
@@ -102,7 +103,10 @@
     <div id="mainApp" class="screen">
         <!-- Header -->
         <header class="app-header">
-            <h1>⛳ Golf Society</h1>
+            <div class="app-header-left">
+                <img src="logo.jpg" alt="NOBS" class="app-logo">
+                <h1>Northern Old Boys</h1>
+            </div>
             <div class="header-actions">
                 <span id="userDisplayName" class="user-name"></span>
                 <button id="logoutBtn" class="icon-btn" title="Logout">🚪</button>
@@ -111,9 +115,9 @@
 
         <!-- Navigation -->
         <nav class="bottom-nav">
-            <button class="nav-btn active" data-view="calendar">
-                <span class="nav-icon">📅</span>
-                <span class="nav-label">Calendar</span>
+            <button class="nav-btn active" data-view="newsfeed">
+                <span class="nav-icon">📰</span>
+                <span class="nav-label">Feed</span>
             </button>
             <button class="nav-btn" data-view="events">
                 <span class="nav-icon">🏌️</span>
@@ -135,24 +139,39 @@
 
         <!-- Views -->
         <main class="app-content">
-            <!-- Calendar View -->
-            <div id="calendarView" class="view active">
+            <!-- Newsfeed View -->
+            <div id="newsfeedView" class="view active">
                 <div class="view-header">
-                    <h2>Event Calendar</h2>
-                    <button id="addEventBtn" class="primary-btn small">+ Add Event</button>
+                    <h2>Society Feed</h2>
                 </div>
                 
-                <div class="calendar-controls">
-                    <button id="prevMonth" class="icon-btn">◀</button>
-                    <h3 id="currentMonth"></h3>
-                    <button id="nextMonth" class="icon-btn">▶</button>
+                <div class="post-composer">
+                    <div class="composer-header">
+                        <div class="composer-avatar" id="composerAvatar"></div>
+                        <div class="composer-input-wrapper">
+                            <textarea id="postContent" placeholder="Share a match report, photo, or message with the society..." rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="composer-footer">
+                        <div class="composer-actions">
+                            <button id="addPhotoBtn" class="composer-btn" title="Add Photo">
+                                📸 Photo
+                            </button>
+                            <input type="file" id="photoInput" accept="image/*" style="display: none;">
+                        </div>
+                        <button id="postBtn" class="primary-btn small">Post</button>
+                    </div>
+                    <div id="photoPreview" class="photo-preview hidden"></div>
                 </div>
                 
-                <div id="calendarGrid" class="calendar-grid"></div>
+                <div class="feed-filters">
+                    <button class="feed-filter-tab active" data-filter="all">All Posts</button>
+                    <button class="feed-filter-tab" data-filter="reports">Match Reports</button>
+                    <button class="feed-filter-tab" data-filter="photos">Photos</button>
+                </div>
                 
-                <div class="upcoming-events">
-                    <h3>Upcoming Events</h3>
-                    <div id="upcomingEventsList"></div>
+                <div id="postsList" class="posts-list">
+                    <!-- Posts will be loaded here -->
                 </div>
             </div>
 

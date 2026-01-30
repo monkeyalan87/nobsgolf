@@ -2,9 +2,10 @@
 let currentUser = null;
 let allEvents = [];
 let allPlayers = [];
-let currentView = 'calendar';
-let currentMonth = new Date();
+let allPosts = [];
+let currentView = 'newsfeed';
 let selectedEventId = null;
+let selectedPhotoFile = null;
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -102,9 +103,21 @@ function setupEventListeners() {
     document.getElementById('addEventBtn').addEventListener('click', () => openEventModal());
     document.getElementById('addEventBtn2').addEventListener('click', () => openEventModal());
     
-    // Calendar navigation
-    document.getElementById('prevMonth').addEventListener('click', () => changeMonth(-1));
-    document.getElementById('nextMonth').addEventListener('click', () => changeMonth(1));
+    // Newsfeed
+    document.getElementById('postBtn').addEventListener('click', createPost);
+    document.getElementById('addPhotoBtn').addEventListener('click', () => {
+        document.getElementById('photoInput').click();
+    });
+    document.getElementById('photoInput').addEventListener('change', handlePhotoSelect);
+    
+    // Feed filters
+    document.querySelectorAll('.feed-filter-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.feed-filter-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            filterPosts(tab.dataset.filter);
+        });
+    });
     
     // Filter tabs
     document.querySelectorAll('.filter-tab').forEach(tab => {
@@ -276,7 +289,8 @@ async function handleLogout() {
 function loadAllData() {
     loadEvents();
     loadPlayers();
-    renderCalendar();
+    loadPosts();
+    updateComposerAvatar();
 }
 
 function loadEvents() {
@@ -312,6 +326,329 @@ function loadPlayers() {
         
         renderPlayers();
     });
+}
+
+function loadPosts() {
+    const postsRef = firebase.database().ref('posts');
+    
+    postsRef.on('value', (snapshot) => {
+        allPosts = [];
+        snapshot.forEach((childSnapshot) => {
+            allPosts.push({
+                id: childSnapshot.key,
+                ...childSnapshot.val()
+            });
+        });
+        
+        // Sort by timestamp (newest first)
+        allPosts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        renderPosts();
+    });
+}
+
+// ===== NEWSFEED FUNCTIONS =====
+function updateComposerAvatar() {
+    if (!currentUser) return;
+    
+    firebase.database().ref(`users/${currentUser.uid}`).once('value').then(snapshot => {
+        const userData = snapshot.val();
+        if (userData) {
+            const initials = userData.displayName.split(' ').map(n => n[0]).join('');
+            document.getElementById('composerAvatar').textContent = initials;
+        }
+    });
+}
+
+function handlePhotoSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+        showToast('Please select an image file', 'error');
+        return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        showToast('Image must be less than 5MB', 'error');
+        return;
+    }
+    
+    selectedPhotoFile = file;
+    
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const preview = document.getElementById('photoPreview');
+        preview.innerHTML = `
+            <img src="${e.target.result}" alt="Preview">
+            <div class="photo-preview-controls">
+                <span>Photo ready to upload</span>
+                <button onclick="clearPhoto()" class="secondary-btn small">Remove</button>
+            </div>
+        `;
+        preview.classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearPhoto() {
+    selectedPhotoFile = null;
+    document.getElementById('photoPreview').classList.add('hidden');
+    document.getElementById('photoInput').value = '';
+}
+
+async function createPost() {
+    const content = document.getElementById('postContent').value.trim();
+    
+    if (!content && !selectedPhotoFile) {
+        showToast('Please write something or add a photo', 'error');
+        return;
+    }
+    
+    try {
+        const userData = (await firebase.database().ref(`users/${currentUser.uid}`).once('value')).val();
+        
+        const postData = {
+            authorId: currentUser.uid,
+            authorName: userData.displayName,
+            content: content,
+            timestamp: new Date().toISOString(),
+            likes: 0,
+            likedBy: {},
+            comments: {}
+        };
+        
+        // If there's a photo, convert to base64
+        if (selectedPhotoFile) {
+            const base64 = await fileToBase64(selectedPhotoFile);
+            postData.photoData = base64;
+            postData.hasPhoto = true;
+        }
+        
+        // Determine post type
+        if (content.toLowerCase().includes('match report') || content.toLowerCase().includes('round report')) {
+            postData.type = 'report';
+        } else if (selectedPhotoFile) {
+            postData.type = 'photo';
+        } else {
+            postData.type = 'message';
+        }
+        
+        await firebase.database().ref('posts').push(postData);
+        
+        // Clear form
+        document.getElementById('postContent').value = '';
+        clearPhoto();
+        
+        showToast('Posted successfully!', 'success');
+        
+    } catch (error) {
+        console.error('Error creating post:', error);
+        showToast('Error creating post', 'error');
+    }
+}
+
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+function renderPosts() {
+    filterPosts('all');
+}
+
+function filterPosts(filter) {
+    const container = document.getElementById('postsList');
+    
+    let filteredPosts = [...allPosts];
+    
+    if (filter === 'reports') {
+        filteredPosts = filteredPosts.filter(post => post.type === 'report');
+    } else if (filter === 'photos') {
+        filteredPosts = filteredPosts.filter(post => post.hasPhoto);
+    }
+    
+    if (filteredPosts.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📰</div>
+                <div class="empty-state-text">No posts yet. Be the first to share!</div>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = filteredPosts.map(post => createPostHTML(post)).join('');
+    
+    // Add event listeners for post actions
+    container.querySelectorAll('.post-action[data-action="like"]').forEach(btn => {
+        btn.addEventListener('click', () => toggleLike(btn.dataset.postId));
+    });
+    
+    container.querySelectorAll('.post-action[data-action="comment"]').forEach(btn => {
+        btn.addEventListener('click', () => toggleComments(btn.dataset.postId));
+    });
+    
+    container.querySelectorAll('.comment-submit').forEach(btn => {
+        btn.addEventListener('click', () => addComment(btn.dataset.postId));
+    });
+    
+    container.querySelectorAll('.post-image').forEach(img => {
+        img.addEventListener('click', () => {
+            window.open(img.src, '_blank');
+        });
+    });
+}
+
+function createPostHTML(post) {
+    const author = allPlayers.find(p => p.id === post.authorId);
+    const initials = author ? author.displayName.split(' ').map(n => n[0]).join('') : '?';
+    const timeAgo = getTimeAgo(post.timestamp);
+    
+    const isLiked = post.likedBy && post.likedBy[currentUser.uid];
+    const likeCount = post.likes || 0;
+    const commentCount = post.comments ? Object.keys(post.comments).length : 0;
+    
+    let badge = '';
+    if (post.type === 'report') {
+        badge = '<span class="post-badge">Match Report</span>';
+    }
+    
+    return `
+        <div class="post-card" data-post-id="${post.id}">
+            <div class="post-header">
+                <div class="post-author">
+                    <div class="post-avatar">${initials}</div>
+                    <div class="post-author-info">
+                        <h4>${post.authorName}</h4>
+                        <div class="post-timestamp">${timeAgo}</div>
+                    </div>
+                </div>
+                ${badge}
+            </div>
+            
+            ${post.content ? `<div class="post-content">${post.content}</div>` : ''}
+            
+            ${post.photoData ? `<img src="${post.photoData}" alt="Post photo" class="post-image">` : ''}
+            
+            <div class="post-footer">
+                <button class="post-action ${isLiked ? 'liked' : ''}" data-action="like" data-post-id="${post.id}">
+                    <span>${isLiked ? '👍' : '👍🏻'}</span>
+                    <span>${likeCount}</span>
+                </button>
+                <button class="post-action" data-action="comment" data-post-id="${post.id}">
+                    <span>💬</span>
+                    <span>${commentCount}</span>
+                </button>
+            </div>
+            
+            <div class="comments-section hidden" id="comments-${post.id}">
+                ${renderComments(post)}
+                <div class="comment-input-wrapper">
+                    <input type="text" placeholder="Write a comment..." id="comment-input-${post.id}">
+                    <button class="comment-submit" data-post-id="${post.id}">Post</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderComments(post) {
+    if (!post.comments || Object.keys(post.comments).length === 0) {
+        return '';
+    }
+    
+    return Object.entries(post.comments).map(([commentId, comment]) => {
+        const author = allPlayers.find(p => p.id === comment.authorId);
+        const initials = author ? author.displayName.split(' ').map(n => n[0]).join('') : '?';
+        const timeAgo = getTimeAgo(comment.timestamp);
+        
+        return `
+            <div class="comment">
+                <div class="comment-avatar">${initials}</div>
+                <div class="comment-content">
+                    <div class="comment-author">${comment.authorName}</div>
+                    <div class="comment-text">${comment.text}</div>
+                    <div class="comment-time">${timeAgo}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function toggleLike(postId) {
+    try {
+        const post = allPosts.find(p => p.id === postId);
+        const isLiked = post.likedBy && post.likedBy[currentUser.uid];
+        
+        const updates = {};
+        if (isLiked) {
+            // Unlike
+            updates[`posts/${postId}/likedBy/${currentUser.uid}`] = null;
+            updates[`posts/${postId}/likes`] = (post.likes || 1) - 1;
+        } else {
+            // Like
+            updates[`posts/${postId}/likedBy/${currentUser.uid}`] = true;
+            updates[`posts/${postId}/likes`] = (post.likes || 0) + 1;
+        }
+        
+        await firebase.database().ref().update(updates);
+        
+    } catch (error) {
+        console.error('Error toggling like:', error);
+        showToast('Error updating like', 'error');
+    }
+}
+
+function toggleComments(postId) {
+    const commentsSection = document.getElementById(`comments-${postId}`);
+    commentsSection.classList.toggle('hidden');
+}
+
+async function addComment(postId) {
+    const input = document.getElementById(`comment-input-${postId}`);
+    const text = input.value.trim();
+    
+    if (!text) return;
+    
+    try {
+        const userData = (await firebase.database().ref(`users/${currentUser.uid}`).once('value')).val();
+        
+        const commentData = {
+            authorId: currentUser.uid,
+            authorName: userData.displayName,
+            text: text,
+            timestamp: new Date().toISOString()
+        };
+        
+        await firebase.database().ref(`posts/${postId}/comments`).push(commentData);
+        
+        input.value = '';
+        
+    } catch (error) {
+        console.error('Error adding comment:', error);
+        showToast('Error adding comment', 'error');
+    }
+}
+
+function getTimeAgo(timestamp) {
+    const now = new Date();
+    const postTime = new Date(timestamp);
+    const diffMs = now - postTime;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return postTime.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
 async function loadLeagueStandings(season = '2025') {

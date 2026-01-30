@@ -1,11 +1,11 @@
 {
-  "name": "Golf Society Manager",
-  "short_name": "Golf Society",
-  "description": "Manage your golf society events, payments, and league standings",
+  "name": "Northern Old Boys Society",
+  "short_name": "NOBS",
+  "description": "Golf society management app for Northern Old Boys Society members",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f5f5f0",
-  "theme_color": "#2d5016",
+  "background_color": "#1f91d0",
+  "theme_color": "#1f91d0",
   "orientation": "portrait-primary",
   "icons": [
     {
