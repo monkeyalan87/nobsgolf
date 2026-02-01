@@ -874,14 +874,32 @@ function createEventCardHTML(event) {
     const participantCount = event.participants ? Object.keys(event.participants).length : 0;
     const isPast = eventDate < new Date();
     
+    // Map venue to course image
+    const courseImageMap = {
+        'Conwy Golf Club': 'conwy-golf-club.jpg',
+        'Manchester Golf Club': 'manchester-golf-club.jpg',
+        'Dunham Forest Golf Club': 'dunham-forest.jpg',
+        'Caldy Golf Club': 'caldy-golf-club.jpg',
+        'Vale Royal Golf Club': 'vale-royal.jpg',
+        'Porthmadog Golf Club': 'porthmadog.jpg',
+        'Royal St David\'s Golf Club': 'royal-st-davids.jpg',
+        'Prestatyn Golf Club': 'prestatyn-golf-club.jpg',
+        'Leasowe Golf Club': 'leasowe-golf-club.jpg'
+    };
+    
+    const courseImage = courseImageMap[event.venue] || 'logo.jpg';
+    
     return `
         <div class="event-card" data-event-id="${event.id}">
+            <div class="event-card-image">
+                <img src="course-images/${courseImage}" alt="${event.venue}" onerror="this.src='logo.jpg'">
+                ${event.countsForLeague ? '<span class="event-badge league">League Event</span>' : ''}
+            </div>
             <div class="event-card-header">
                 <div>
                     <div class="event-card-title">${event.name}</div>
                     <div class="event-card-date">${formatDate(eventDate)}</div>
                 </div>
-                ${event.countsForLeague ? '<span class="event-badge league">League Event</span>' : ''}
             </div>
             <div class="event-card-details">
                 <div class="event-detail">📍 ${event.venue}</div>
