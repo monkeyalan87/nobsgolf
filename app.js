@@ -6,6 +6,7 @@ let allPosts = [];
 let currentView = 'newsfeed';
 let selectedEventId = null;
 let selectedPhotoFile = null;
+let currentMonth = new Date();
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -100,8 +101,14 @@ function setupEventListeners() {
     });
     
     // Add event buttons
-    document.getElementById('addEventBtn').addEventListener('click', () => openEventModal());
-    document.getElementById('addEventBtn2').addEventListener('click', () => openEventModal());
+    const addEventBtn = document.getElementById('addEventBtn');
+    const addEventBtn2 = document.getElementById('addEventBtn2');
+    if (addEventBtn) {
+        addEventBtn.addEventListener('click', () => openEventModal());
+    }
+    if (addEventBtn2) {
+        addEventBtn2.addEventListener('click', () => openEventModal());
+    }
     
     // Newsfeed
     document.getElementById('postBtn').addEventListener('click', createPost);
