@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 Season Events - Northern Old Boys Society</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1f91d0 0%, #1a7eb8 100%);
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 10px;
+            font-size: 42px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+        
+        .season-stats {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #1f91d0;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+        }
+        
+        .event-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .event-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        
+        .event-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #1f91d0 0%, #1a7eb8 100%);
+        }
+        
+        .event-content {
+            padding: 20px;
+        }
+        
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .event-name {
+            font-size: 22px;
+            font-weight: bold;
+            color: #1f91d0;
+            margin-bottom: 5px;
+        }
+        
+        .event-badge {
+            background: #1f91d0;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .event-badge.special {
+            background: #e74c3c;
+        }
+        
+        .event-date {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            color: #666;
+        }
+        
+        .event-date svg {
+            margin-right: 8px;
+        }
+        
+        .event-venue {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            color: #666;
+        }
+        
+        .event-venue svg {
+            margin-right: 8px;
+        }
+        
+        .event-details {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .detail-item {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .detail-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1f91d0;
+        }
+        
+        .event-description {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        .instructions {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 30px;
+        }
+        
+        .instructions h2 {
+            color: #1f91d0;
+            margin-bottom: 20px;
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+        }
+        
+        .instructions li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⛳ 2026 Season Calendar</h1>
+        <p class="subtitle">Northern Old Boys Society Golf Events</p>
+        
+        <div class="season-stats">
+            <div class="stat-item">
+                <div class="stat-number">9</div>
+                <div class="stat-label">Total Events</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">8</div>
+                <div class="stat-label">League Events</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">£405</div>
+                <div class="stat-label">Full Season Cost</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">5</div>
+                <div class="stat-label">Links Courses</div>
+            </div>
+        </div>
+        
+        <div class="events-grid">
+            <!-- Event 1: Conwy -->
+            <div class="event-card">
+                <img src="course-images/conwy-golf-club.jpg" alt="Conwy Golf Club" class="event-image">
+                <div class="event-content">
+                    <div class="event-header">
+                        <div>
+                            <div class="event-name">Conwy Golf Club</div>
+                        </div>
+                        <div class="event-badge">League</div>
+                    </div>
+                    <div class="event-date">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                        </svg>
+                        30th April 2026 • 09:00
+                    </div>
+                    <div class="event-venue">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                        </svg>
+                        Conwy, North Wales
+                    </div>
+                    <div class="event-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Cost</div>
+                            <div class="detail-value">£45</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Max Players</div>
+                            <div class="detail-value">16</div>
+                        </div>
+                    </div>
+                    <div class="event-description">
+                        Championship links course on the North Wales coast with stunning views of Conwy Mountain, the estuary, and the Great Orme. Host of the 2021 Curtis Cup and Wales' only Open Qualifying venue.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Event 2: Manchester -->
+            <div class="event-card">
+                <img src="course-images/manchester-golf-club.jpg" alt="Manchester Golf Club" class="event-image">
+                <div class="event-content">
+                    <div class="event-header">
+                        <div>
+                            <div class="event-name">Manchester Golf Club</div>
+                        </div>
+                        <div class="event-badge">League</div>
+                    </div>
+                    <div class="event-date">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                        </svg>
+                        15th May 2026 • 09:30
+                    </div>
+                    <div class="event-venue">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                        </svg>
+                        Middleton, Greater Manchester
+                    </div>
+                    <div class="event-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Cost</div>
+                            <div class="detail-value">£50</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Max Players</div>
+                            <div class="detail-value">16</div>
+                        </div>
+                    </div>
+                    <div class="event-description">
+                        Harry Colt masterpiece set on 247 acres of moorland and heathland. Widely regarded as Lancashire's best inland course, just 20 minutes from Manchester city centre.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Event 3: Dunham Forest -->
+            <div class="event-card">
+                <img src="course-images/dunham-forest.jpg" alt="Dunham Forest" class="event-image">
+                <div class="event-content">
+                    <div class="event-header">
+                        <div>
+                            <div class="event-name">Dunham Forest</div>
+                        </div>
+                        <div class="event-badge">League</div>
+                    </div>
+                    <div class="event-date">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                        </svg>
+                        19th June 2026 • 10:00
+                    </div>
+                    <div class="event-venue">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                        </svg>
+                        Altrincham, Cheshire
+                    </div>
+                    <div class="event-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Cost</div>
+                            <div class="detail-value">£40</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Max Players</div>
+                            <div class="detail-value">16</div>
+                        </div>
+                    </div>
+                    <div class="event-description">
+                        Parkland course set in beautiful Cheshire countryside. Challenging layout with mature trees and well-maintained greens. A hidden gem in the North West.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Event 4: Caldy -->
+            <div class="event-card">
+                <img src="course-images/caldy-golf-club.jpg" alt="Caldy Golf Club" class="event-image">
+                <div class="event-content">
+                    <div class="event-header">
+                        <div>
+                            <div class="event-name">Caldy Golf Club</div>
+                        </div>
+                        <div class="event-badge">League</div>
+                    </div>
+                    <div class="event-date">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                        </svg>
+                        17th July 2026 • 09:00
+                    </div>
+                    <div class="event-venue">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                        </svg>
+                        Wirral, Merseyside
+                    </div>
+                    <div class="event-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Cost</div>
+                            <div class="detail-value">£55</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Max Players</div>
+                            <div class="detail-value">16</div>
+                        </div>
+                    </div>
+                    <div class="event-description">
+                        Stunning heathland/links course on the Wirral Peninsula with panoramic views over the Dee Estuary to Wales. One of England's finest courses with superb conditions year-round.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Event 5: Vale Royal -->
+            <div class="event-card">
+                <img src="course-images/vale-royal.jpg" alt="Vale Royal" class="event-image">
+                <div class="event-content">
+                    <div class="event-header">
+                        <div>
+                            <div class="event-name">Vale Royal</div>
+                        </div>
+                        <div class="event-badge">League</div>
+                    </div>
+                    <div class="event-date">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                        </svg>
+                        28th August 2026 • 10:00
+                    </div>
+                    <div class="event-venue">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                        </svg>
+                        Northwich, Cheshire
+                    </div>
+                    <div class="event-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Cost</div>
+                            <div class="detail-value">£35</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Max Players</div>
+                            <div class="detail-value">16</div>
+                        </div>
+                    </div>
+                    <div class="event-description">
+                        Picturesque parkland course set in the grounds of the historic Vale Royal Abbey. Tree-lined fairways and challenging water features make for a memorable round.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Event 6: Porthmadog -->
+            <div class="event-card">
+                <img src="course-images/porthmadog.jpg" alt="Porthmadog" class="event-image">
+                <div class="event-content">
+                    <div class="event-header">
+                        <div>
+                            <div class="event-name">Porthmadog - Day 1</div>
+                        </div>
+                        <div class="event-badge special">Away Trip</div>
+                    </div>
+                    <div class="event-date">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                        </svg>
+                        17th September 2026 • 09:00
+                    </div>
+                    <div class="event-venue">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                        </svg>
+                        Porthmadog, Gwynedd
+                    </div>
+                    <div class="event-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Cost</div>
+                            <div class="detail-value">£40</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Max Players</div>
+                            <div class="detail-value">16</div>
+                        </div>
+                    </div>
+                    <div class="event-description">
+                        DAY 1 of Annual Away Trip. Traditional Welsh links course with spectacular views of Snowdonia, Harlech Castle, and Cardigan Bay. Known locally as 'The Borth'.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Event 7: Royal St David's -->
+            <div class="event-card">
+                <img src="course-images/royal-st-davids.jpg" alt="Royal St David's" class="event-image">
+                <div class="event-content">
+                    <div class="event-header">
+                        <div>
+                            <div class="event-name">Royal St David's - Day 2</div>
+                        </div>
+                        <div class="event-badge special">Away Trip</div>
+                    </div>
+                    <div class="event-date">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                        </svg>
+                        18th September 2026 • 09:00
+                    </div>
+                    <div class="event-venue">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                        </svg>
+                        Harlech, Gwynedd
+                    </div>
+                    <div class="event-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Cost</div>
+                            <div class="detail-value">£65</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Max Players</div>
+                            <div class="detail-value">16</div>
+                        </div>
+                    </div>
+                    <div class="event-description">
+                        DAY 2 of Annual Away Trip. Championship links course ranked in the World's Top 100. Nestled below the dramatic Harlech Castle with stunning mountain and sea views. A bucket-list course!
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Event 8: Prestatyn -->
+            <div class="event-card">
+                <img src="course-images/prestatyn-golf-club.jpg" alt="Prestatyn" class="event-image">
+                <div class="event-content">
+                    <div class="event-header">
+                        <div>
+                            <div class="event-name">Prestatyn Golf Club</div>
+                        </div>
+                        <div class="event-badge">League</div>
+                    </div>
+                    <div class="event-date">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                        </svg>
+                        16th October 2026 • 09:30
+                    </div>
+                    <div class="event-venue">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                        </svg>
+                        Prestatyn, Denbighshire
+                    </div>
+                    <div class="event-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Cost</div>
+                            <div class="detail-value">£40</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Max Players</div>
+                            <div class="detail-value">16</div>
+                        </div>
+                    </div>
+                    <div class="event-description">
+                        Classic links course on the North Wales coast. Natural terrain with challenging dunes, undulating fairways, and fast greens. Views across the Irish Sea make this a must-play venue.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Event 9: Leasowe -->
+            <div class="event-card">
+                <img src="course-images/leasowe-golf-club.jpg" alt="Leasowe" class="event-image">
+                <div class="event-content">
+                    <div class="event-header">
+                        <div>
+                            <div class="event-name">Christmas at Leasowe</div>
+                        </div>
+                        <div class="event-badge special">Social</div>
+                    </div>
+                    <div class="event-date">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                        </svg>
+                        18th December 2026 • 10:00
+                    </div>
+                    <div class="event-venue">
+                        <svg width="16" height="16" fill="#666" viewBox="0 0 16 16">
+                            <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                        </svg>
+                        Wirral, Merseyside
+                    </div>
+                    <div class="event-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Cost</div>
+                            <div class="detail-value">£45</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Max Players</div>
+                            <div class="detail-value">20</div>
+                        </div>
+                    </div>
+                    <div class="event-description">
+                        Season finale! Christmas team competition followed by festive lunch at the clubhouse. Links course on the Wirral with views of Liverpool Bay. Fun day to round off the year with prizes, food, and Christmas cheer!
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h2>📋 How to Add These Events to Your App</h2>
+            
+            <h3>Option 1: Quick Import (Easiest)</h3>
+            <ol>
+                <li>Go to Firebase Console: <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a></li>
+                <li>Select your project</li>
+                <li>Click <strong>Realtime Database</strong></li>
+                <li>Click the <strong>⋮</strong> (three dots) menu on "events" node</li>
+                <li>Click <strong>Import JSON</strong></li>
+                <li>Upload the <code>2026-season-events.json</code> file</li>
+                <li>Click <strong>Import</strong></li>
+            </ol>
+            
+            <div class="highlight">
+                <strong>✅ Result:</strong> All 9 events added instantly with course images!
+            </div>
+            
+            <h3>Option 2: Add Manually Through App</h3>
+            <ol>
+                <li>Log into your app at <strong>nobsgolf.co.uk</strong></li>
+                <li>Go to the <strong>Events</strong> tab</li>
+                <li>Click <strong>+ Add Event</strong></li>
+                <li>Fill in the details for each event (see event cards above)</li>
+                <li>Click <strong>Save Event</strong></li>
+                <li>Repeat for all 9 events</li>
+            </ol>
+            
+            <h3>Course Images</h3>
+            <p>All course images are in the <code>course-images/</code> folder. You can:</p>
+            <ul>
+                <li>Upload them to your hosting</li>
+                <li>Add them to Firebase Storage</li>
+                <li>Reference them in event descriptions</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

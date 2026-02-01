@@ -1,0 +1,170 @@
+{
+  "events": {
+    "nobs2026_001": {
+      "name": "Conwy Golf Club",
+      "venue": "Conwy Golf Club",
+      "date": "2026-04-10",
+      "time": "10:00",
+      "cost": 90,
+      "maxPlayers": 20,
+      "description": "Championship links course on the North Wales coastline. Stunning views of Conwy Mountain, Conwy Estuary and the Great Orme. Hosted the 2021 Curtis Cup. Includes full English breakfast.",
+      "countsForLeague": true,
+      "createdBy": "admin",
+      "createdAt": "2026-01-30T19:00:00.000Z",
+      "courseInfo": {
+        "type": "Links",
+        "par": 72,
+        "length": "6936 yards",
+        "designer": "Jack Morris, Frank Pennink",
+        "location": "Conwy, North Wales"
+      }
+    },
+    "nobs2026_002": {
+      "name": "Manchester Golf Club",
+      "venue": "Manchester Golf Club",
+      "date": "2026-05-15",
+      "time": "10:00",
+      "cost": 77,
+      "maxPlayers": 20,
+      "description": "Harry Colt masterpiece spanning 240 acres. Lancashire's best inland golf course with moorland, heathland and parkland features. Challenging final holes. Includes full English breakfast.",
+      "countsForLeague": true,
+      "createdBy": "admin",
+      "createdAt": "2026-01-30T19:00:00.000Z",
+      "courseInfo": {
+        "type": "Moorland/Parkland",
+        "par": 72,
+        "length": "6670 yards",
+        "designer": "Harry Shapland Colt",
+        "location": "Middleton, Manchester"
+      }
+    },
+    "nobs2026_003": {
+      "name": "Dunham Forest Golf Club",
+      "venue": "Dunham Forest Golf Club",
+      "date": "2026-06-19",
+      "time": "13:00",
+      "cost": 104,
+      "maxPlayers": 20,
+      "description": "Championship parkland course set in beautiful Cheshire countryside. Tree-lined fairways and challenging water features. 1pm tee time with soup and sandwiches beforehand.",
+      "countsForLeague": true,
+      "createdBy": "admin",
+      "createdAt": "2026-01-30T19:00:00.000Z",
+      "courseInfo": {
+        "type": "Parkland",
+        "par": 72,
+        "length": "6640 yards",
+        "location": "Altrincham, Cheshire"
+      }
+    },
+    "nobs2026_004": {
+      "name": "Caldy Golf Club",
+      "venue": "Caldy Golf Club",
+      "date": "2026-07-17",
+      "time": "10:00",
+      "cost": 130,
+      "maxPlayers": 20,
+      "description": "Premium links course on the Wirral Peninsula with spectacular views over the Dee Estuary and Welsh mountains. Hosted numerous professional tournaments. Includes full English breakfast.",
+      "countsForLeague": true,
+      "createdBy": "admin",
+      "createdAt": "2026-01-30T19:00:00.000Z",
+      "courseInfo": {
+        "type": "Links",
+        "par": 72,
+        "length": "6750 yards",
+        "location": "Wirral, Merseyside"
+      }
+    },
+    "nobs2026_005": {
+      "name": "Vale Royal Golf Club",
+      "venue": "Vale Royal Golf Club",
+      "date": "2026-08-28",
+      "time": "10:00",
+      "cost": 70,
+      "maxPlayers": 20,
+      "description": "Picturesque parkland course in the Cheshire countryside. Well-maintained greens and challenging layout suitable for all abilities. Includes full English breakfast.",
+      "countsForLeague": true,
+      "createdBy": "admin",
+      "createdAt": "2026-01-30T19:00:00.000Z",
+      "courseInfo": {
+        "type": "Parkland",
+        "par": 72,
+        "length": "6300 yards",
+        "location": "Northwich, Cheshire"
+      }
+    },
+    "nobs2026_006": {
+      "name": "Annual Away Trip - Porthmadog",
+      "venue": "Porthmadog Golf Club",
+      "date": "2026-09-17",
+      "time": "12:00",
+      "cost": 65,
+      "maxPlayers": 24,
+      "description": "Day 1 of annual away trip. Beautiful links course with panoramic views of Snowdonia and Cardigan Bay. 12pm tee time allows travel time. Meal before play TBD. Accommodation: Premier Inn Porthmadog (book your own room). Dinner at restaurant TBD.",
+      "countsForLeague": true,
+      "createdBy": "admin",
+      "createdAt": "2026-01-30T19:00:00.000Z",
+      "courseInfo": {
+        "type": "Links",
+        "par": 71,
+        "length": "6300 yards",
+        "location": "Porthmadog, Gwynedd"
+      }
+    },
+    "nobs2026_007": {
+      "name": "Annual Away Trip - Royal St David's",
+      "venue": "Royal St David's Golf Club",
+      "date": "2026-09-18",
+      "time": "08:00",
+      "cost": 128,
+      "maxPlayers": 24,
+      "description": "Day 2 of annual away trip. Championship links ranked among the world's 100 greatest. Dramatic setting beneath Harlech Castle with views of Snowdonia. 20-minute drive from Porthmadog. Early tee time allows reasonable journey home. Includes full English breakfast.",
+      "countsForLeague": true,
+      "createdBy": "admin",
+      "createdAt": "2026-01-30T19:00:00.000Z",
+      "courseInfo": {
+        "type": "Championship Links",
+        "par": 69,
+        "length": "6565 yards",
+        "designer": "W.H. More, Harry Colt",
+        "location": "Harlech, Gwynedd",
+        "ranking": "World's 100 Greatest"
+      }
+    },
+    "nobs2026_008": {
+      "name": "Prestatyn Golf Club",
+      "venue": "Prestatyn Golf Club",
+      "date": "2026-10-16",
+      "time": "10:00",
+      "cost": 57,
+      "maxPlayers": 20,
+      "description": "Challenging links course on the North Wales coast. Excellent condition and warm welcome. Good test of golf in autumn conditions. Includes full English breakfast.",
+      "countsForLeague": true,
+      "createdBy": "admin",
+      "createdAt": "2026-01-30T19:00:00.000Z",
+      "courseInfo": {
+        "type": "Links",
+        "par": 72,
+        "length": "6700 yards",
+        "location": "Prestatyn, Denbighshire"
+      }
+    },
+    "nobs2026_009": {
+      "name": "Christmas Team Game & Lunch",
+      "venue": "Leasowe Golf Club",
+      "date": "2026-12-18",
+      "time": "10:00",
+      "cost": 55,
+      "maxPlayers": 24,
+      "description": "Annual Christmas celebration! Team format competition followed by festive lunch in the clubhouse. Includes breakfast roll before play and Christmas dinner afterwards. Prizes and seasonal cheer guaranteed!",
+      "countsForLeague": true,
+      "createdBy": "admin",
+      "createdAt": "2026-01-30T19:00:00.000Z",
+      "courseInfo": {
+        "type": "Links",
+        "par": 71,
+        "length": "6600 yards",
+        "location": "Wirral, Merseyside"
+      }
+    }
+  }
+}
