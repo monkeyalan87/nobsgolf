@@ -1375,7 +1375,35 @@ function renderParticipantsList(event) {
     
     const participantHTML = Object.entries(event.participants).map(([userId, data]) => {
         const player = allPlayers.find(p => p.id === userId);
-        if (!player) return '';
+        
+        // If player not found in allPlayers yet, try to load from Firebase
+        if (!player) {
+            // Show loading placeholder
+            firebase.database().ref(`users/${userId}`).once('value').then(snapshot => {
+                const userData = snapshot.val();
+                if (userData) {
+                    // Add to allPlayers
+                    allPlayers.push({ id: userId, ...userData });
+                    // Re-render participants list
+                    renderParticipantsList(event);
+                }
+            });
+            
+            return `
+                <div class="league-row">
+                    <div class="league-player" style="grid-column: span 2;">
+                        <div class="league-avatar">?</div>
+                        <div>
+                            <div class="league-name">Loading...</div>
+                            <div class="league-handicap">HCP: -</div>
+                        </div>
+                    </div>
+                    <div style="text-align: right; color: var(--text-secondary);">
+                        ⏳ Pending
+                    </div>
+                </div>
+            `;
+        }
         
         const initials = player.displayName.split(' ').map(n => n[0]).join('');
         const paidStatus = data.paid ? '✓ Paid' : '⏳ Pending';
@@ -1625,6 +1653,9 @@ function switchView(viewName) {
             loadLeagueStandings('2025');
         } else if (viewName === 'profile') {
             renderProfile();
+        } else if (viewName === 'events') {
+            // Re-render events when switching to events tab
+            renderAllEvents();
         }
     }
 }
