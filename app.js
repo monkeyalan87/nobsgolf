@@ -111,11 +111,24 @@ function setupEventListeners() {
     }
     
     // Newsfeed
-    document.getElementById('postBtn').addEventListener('click', createPost);
-    document.getElementById('addPhotoBtn').addEventListener('click', () => {
-        document.getElementById('photoInput').click();
-    });
-    document.getElementById('photoInput').addEventListener('change', handlePhotoSelect);
+    const postBtn = document.getElementById('postBtn');
+    const addPhotoBtn = document.getElementById('addPhotoBtn');
+    const photoInput = document.getElementById('photoInput');
+    
+    console.log('Photo upload elements:', { postBtn: !!postBtn, addPhotoBtn: !!addPhotoBtn, photoInput: !!photoInput });
+    
+    if (postBtn) {
+        postBtn.addEventListener('click', createPost);
+    }
+    if (addPhotoBtn && photoInput) {
+        addPhotoBtn.addEventListener('click', () => {
+            console.log('Photo button clicked, opening file picker...');
+            photoInput.click();
+        });
+        photoInput.addEventListener('change', handlePhotoSelect);
+    } else {
+        console.error('Photo upload elements missing!', { addPhotoBtn, photoInput });
+    }
     
     // Feed filters
     document.querySelectorAll('.feed-filter-tab').forEach(tab => {
@@ -154,10 +167,20 @@ function setupEventListeners() {
     document.getElementById('editProfileBtn').addEventListener('click', openEditProfileModal);
     
     // Profile photo upload
-    document.getElementById('changePhotoBtn').addEventListener('click', () => {
-        document.getElementById('profilePhotoInput').click();
-    });
-    document.getElementById('profilePhotoInput').addEventListener('change', handleProfilePhotoUpload);
+    const changePhotoBtn = document.getElementById('changePhotoBtn');
+    const profilePhotoInput = document.getElementById('profilePhotoInput');
+    
+    console.log('Profile photo elements:', { changePhotoBtn: !!changePhotoBtn, profilePhotoInput: !!profilePhotoInput });
+    
+    if (changePhotoBtn && profilePhotoInput) {
+        changePhotoBtn.addEventListener('click', () => {
+            console.log('Profile photo button clicked, opening file picker...');
+            profilePhotoInput.click();
+        });
+        profilePhotoInput.addEventListener('change', handleProfilePhotoUpload);
+    } else {
+        console.error('Profile photo elements missing!', { changePhotoBtn, profilePhotoInput });
+    }
     
     // Search
     document.getElementById('playerSearch').addEventListener('input', (e) => {
@@ -373,25 +396,38 @@ function updateComposerAvatar() {
 }
 
 function handlePhotoSelect(event) {
+    console.log('handlePhotoSelect called', event);
     const file = event.target.files[0];
-    if (!file) return;
+    console.log('Selected file:', file);
+    
+    if (!file) {
+        console.log('No file selected');
+        return;
+    }
     
     if (!file.type.startsWith('image/')) {
         showToast('Please select an image file', 'error');
+        console.error('Invalid file type:', file.type);
         return;
     }
     
     if (file.size > 5 * 1024 * 1024) { // 5MB limit
         showToast('Image must be less than 5MB', 'error');
+        console.error('File too large:', file.size);
         return;
     }
     
     selectedPhotoFile = file;
+    console.log('Photo selected successfully, creating preview...');
     
     // Show preview
     const reader = new FileReader();
     reader.onload = (e) => {
         const preview = document.getElementById('photoPreview');
+        if (!preview) {
+            console.error('photoPreview element not found!');
+            return;
+        }
         preview.innerHTML = `
             <img src="${e.target.result}" alt="Preview">
             <div class="photo-preview-controls">
@@ -400,6 +436,10 @@ function handlePhotoSelect(event) {
             </div>
         `;
         preview.classList.remove('hidden');
+        console.log('Preview displayed');
+    };
+    reader.onerror = (error) => {
+        console.error('FileReader error:', error);
     };
     reader.readAsDataURL(file);
 }
@@ -1416,17 +1456,41 @@ async function saveEvent() {
 }
 
 async function joinEvent(eventId) {
+    console.log('Attempting to join event:', eventId);
+    console.log('Current user:', currentUser);
+    
     try {
-        await firebase.database().ref(`events/${eventId}/participants/${currentUser.uid}`).set({
+        const participantData = {
             joinedAt: new Date().toISOString(),
             paid: false
-        });
+        };
         
+        console.log('Participant data:', participantData);
+        console.log('Database path:', `events/${eventId}/participants/${currentUser.uid}`);
+        
+        await firebase.database().ref(`events/${eventId}/participants/${currentUser.uid}`).set(participantData);
+        
+        console.log('Successfully joined event!');
         showToast('Successfully joined event', 'success');
-        closeAllModals();
+        
+        // Reload the event data and refresh the modal
+        const eventSnapshot = await firebase.database().ref(`events/${eventId}`).once('value');
+        const updatedEvent = { id: eventId, ...eventSnapshot.val() };
+        
+        // Update the event in allEvents array
+        const eventIndex = allEvents.findIndex(e => e.id === eventId);
+        if (eventIndex !== -1) {
+            allEvents[eventIndex] = updatedEvent;
+        }
+        
+        // Refresh the modal to show updated participants
+        openEventDetails(eventId);
+        
     } catch (error) {
-        showToast('Error joining event', 'error');
-        console.error(error);
+        console.error('Error joining event:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        showToast(`Error joining event: ${error.message}`, 'error');
     }
 }
 
@@ -1436,7 +1500,20 @@ async function leaveEvent(eventId) {
     try {
         await firebase.database().ref(`events/${eventId}/participants/${currentUser.uid}`).remove();
         showToast('Left event', 'success');
-        closeAllModals();
+        
+        // Reload the event data and refresh the modal
+        const eventSnapshot = await firebase.database().ref(`events/${eventId}`).once('value');
+        const updatedEvent = { id: eventId, ...eventSnapshot.val() };
+        
+        // Update the event in allEvents array
+        const eventIndex = allEvents.findIndex(e => e.id === eventId);
+        if (eventIndex !== -1) {
+            allEvents[eventIndex] = updatedEvent;
+        }
+        
+        // Refresh the modal to show updated participants
+        openEventDetails(eventId);
+        
     } catch (error) {
         showToast('Error leaving event', 'error');
         console.error(error);
