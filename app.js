@@ -1553,6 +1553,11 @@ function closeAllModals() {
     document.querySelectorAll('.modal').forEach(modal => {
         modal.classList.remove('active');
     });
+    // Stop live scoreboard listener when closing event details
+    if (liveScoreboardRef) {
+        liveScoreboardRef.off();
+        liveScoreboardRef = null;
+    }
 }
 // ===== EVENT ACTIONS =====
 async function saveEvent() {
@@ -2107,6 +2112,8 @@ function buildScorecardGrid(containerId, startHole, endHole) {
     }
     container.innerHTML = html;
 }
+let scoreSaveTimeout = null;
+
 function handleScoreInput(input, holeIndex) {
     let val = parseInt(input.value);
     if (isNaN(val) || val < 1) {
@@ -2135,6 +2142,66 @@ function handleScoreInput(input, holeIndex) {
         const nextInput = document.getElementById(`holeScore${holeIndex + 1}`);
         if (nextInput && input.value.length >= 1) {
             setTimeout(() => nextInput.focus(), 150);
+        }
+    }
+    
+    // Auto-save to Firebase after short debounce (live scoring)
+    if (scoreSaveTimeout) clearTimeout(scoreSaveTimeout);
+    scoreSaveTimeout = setTimeout(() => autoSaveScorecard(), 600);
+}
+
+async function autoSaveScorecard() {
+    if (!currentScorecardEventId || !currentScorecardCourseData) return;
+    
+    const courseData = currentScorecardCourseData;
+    let totalPoints = 0;
+    let totalGross = 0;
+    let holesCompleted = 0;
+    
+    for (let i = 0; i < 18; i++) {
+        const score = scorecardScores[i];
+        if (score) {
+            const hole = courseData.holes[i];
+            const strokes = getStrokesForHole(currentScorecardCourseHcp, hole.si);
+            totalPoints += calculateStablefordPoints(score, hole.par, strokes);
+            totalGross += score;
+            holesCompleted++;
+        }
+    }
+    
+    try {
+        const scorecardData = {
+            holeScores: scorecardScores,
+            totalGross: totalGross,
+            stablefordPoints: totalPoints,
+            holesCompleted: holesCompleted,
+            courseHandicap: currentScorecardCourseHcp,
+            handicapIndex: parseFloat(document.getElementById('scorecardHcpIndex').textContent),
+            isFinalized: false,
+            lastUpdated: new Date().toISOString()
+        };
+        
+        await firebase.database().ref(`events/${currentScorecardEventId}/scorecards/${currentUser.uid}`).set(scorecardData);
+        
+        // Also save stableford for legacy league compatibility
+        await firebase.database().ref(`events/${currentScorecardEventId}/scores/${currentUser.uid}`).set(totalPoints);
+        
+        // Brief save indicator
+        const saveIndicator = document.getElementById('liveSaveStatus');
+        if (saveIndicator) {
+            saveIndicator.textContent = '✓ Saved';
+            saveIndicator.className = 'live-save-status saved';
+            setTimeout(() => {
+                saveIndicator.textContent = 'Live';
+                saveIndicator.className = 'live-save-status live';
+            }, 1500);
+        }
+    } catch (error) {
+        console.error('Auto-save error:', error);
+        const saveIndicator = document.getElementById('liveSaveStatus');
+        if (saveIndicator) {
+            saveIndicator.textContent = '✗ Error';
+            saveIndicator.className = 'live-save-status error';
         }
     }
 }
@@ -2214,7 +2281,7 @@ async function submitScorecard() {
     const holesCompleted = scorecardScores.filter(s => s !== null).length;
     
     if (holesCompleted < 18) {
-        if (!confirm(`You've only completed ${holesCompleted}/18 holes. Submit anyway?`)) return;
+        if (!confirm(`You've completed ${holesCompleted}/18 holes. Finalize round anyway? (Handicap adjustment only applies to full 18-hole rounds.)`)) return;
     }
     
     const courseData = currentScorecardCourseData;
@@ -2232,19 +2299,20 @@ async function submitScorecard() {
     }
     
     try {
-        // Save scorecard to event
+        // Save finalized scorecard
         const scorecardData = {
             holeScores: scorecardScores,
             totalGross: totalGross,
             stablefordPoints: totalPoints,
+            holesCompleted: holesCompleted,
             courseHandicap: currentScorecardCourseHcp,
             handicapIndex: parseFloat(document.getElementById('scorecardHcpIndex').textContent),
-            submittedAt: new Date().toISOString()
+            isFinalized: true,
+            submittedAt: new Date().toISOString(),
+            lastUpdated: new Date().toISOString()
         };
         
         await firebase.database().ref(`events/${currentScorecardEventId}/scorecards/${currentUser.uid}`).set(scorecardData);
-        
-        // Also save the basic score for backwards compatibility with league
         await firebase.database().ref(`events/${currentScorecardEventId}/scores/${currentUser.uid}`).set(totalPoints);
         
         // Apply handicap adjustment if all 18 holes completed
@@ -2252,15 +2320,20 @@ async function submitScorecard() {
             await applyHandicapAdjustment(totalPoints, currentScorecardEventId);
         }
         
-        showToast(`Scorecard submitted! ${totalPoints} Stableford points`, 'success');
-        closeAllModals();
+        showToast(`Round finalized! ${totalPoints} Stableford points`, 'success');
         
-        // Refresh event details
+        // Stop the live listener for this event's scorecards
+        if (liveScoreboardRef) {
+            liveScoreboardRef.off();
+            liveScoreboardRef = null;
+        }
+        
+        closeAllModals();
         openEventDetails(currentScorecardEventId);
         
     } catch (error) {
-        console.error('Error submitting scorecard:', error);
-        showToast('Error submitting scorecard', 'error');
+        console.error('Error finalizing scorecard:', error);
+        showToast('Error finalizing scorecard', 'error');
     }
 }
 async function applyHandicapAdjustment(stablefordPoints, eventId) {
@@ -2296,7 +2369,9 @@ async function applyHandicapAdjustment(stablefordPoints, eventId) {
         console.error('Error applying handicap adjustment:', error);
     }
 }
-// ===== UPDATE EVENT DETAILS TO SHOW SCORES =====
+// ===== LIVE LEADERBOARD =====
+let liveScoreboardRef = null;
+
 function renderEventScoresSummary(event) {
     const container = document.getElementById('eventScoresSummary');
     const enterBtn = document.getElementById('enterScorecardBtn');
@@ -2307,81 +2382,146 @@ function renderEventScoresSummary(event) {
     const hasSubmitted = event.scorecards && event.scorecards[currentUser.uid];
     const eventDate = new Date(event.date);
     const isPast = eventDate < new Date();
+    const isEventDay = isToday(eventDate);
     
-    // Show/hide enter scorecard button
-    if (isParticipant && courseData && (isPast || isToday(eventDate))) {
+    // Show enter scorecard button - available on event day, day after, or any past event
+    if (isParticipant && courseData && (isPast || isEventDay)) {
         enterBtn.classList.remove('hidden');
-        enterBtn.textContent = hasSubmitted ? '✏️ Edit Scorecard' : '🏌️ Enter Scorecard';
+        const isFinalized = hasSubmitted && event.scorecards[currentUser.uid].isFinalized;
+        if (isFinalized) {
+            enterBtn.textContent = '📋 View Scorecard';
+        } else if (hasSubmitted) {
+            enterBtn.textContent = '🏌️ Continue Round';
+        } else {
+            enterBtn.textContent = '🏌️ Start Round';
+        }
         enterBtn.onclick = () => openScorecardModal(event.id);
     } else {
         enterBtn.classList.add('hidden');
     }
     
-    // View scorecard button
-    if (hasSubmitted) {
+    // View scorecard button (for finalized rounds)
+    if (hasSubmitted && event.scorecards[currentUser.uid].isFinalized) {
         viewBtn.classList.remove('hidden');
         viewBtn.onclick = () => openScorecardModal(event.id);
     } else {
         viewBtn.classList.add('hidden');
     }
     
-    // Render leaderboard if there are scorecards
-    if (event.scorecards && Object.keys(event.scorecards).length > 0) {
-        const scorecards = Object.entries(event.scorecards)
-            .map(([playerId, data]) => {
-                const player = allPlayers.find(p => p.id === playerId);
-                return {
-                    playerId,
-                    name: player ? player.displayName : 'Unknown',
-                    stablefordPoints: data.stablefordPoints || 0,
-                    totalGross: data.totalGross || 0,
-                    courseHandicap: data.courseHandicap || 0
-                };
-            })
-            .sort((a, b) => b.stablefordPoints - a.stablefordPoints);
-        
-        let html = `
-            <div class="scores-leaderboard">
-                <div class="score-leaderboard-row header">
-                    <span>#</span>
-                    <span>Player</span>
-                    <span>Gross</span>
-                    <span>Pts</span>
-                </div>
-        `;
-        
-        scorecards.forEach((sc, index) => {
-            const posClass = index === 0 ? 'pos-1' : index === 1 ? 'pos-2' : index === 2 ? 'pos-3' : '';
-            const isMe = sc.playerId === currentUser.uid;
-            
-            html += `
-                <div class="score-leaderboard-row ${isMe ? 'current-user' : ''}">
-                    <span class="score-position ${posClass}">${index + 1}</span>
-                    <span class="score-player-name">${sc.name} <small style="color:var(--text-secondary);">(${sc.courseHandicap})</small></span>
-                    <span class="score-gross">${sc.totalGross}</span>
-                    <span class="score-stableford">${sc.stablefordPoints}</span>
-                </div>
-            `;
+    // Set up real-time listener for live leaderboard on event day
+    if (liveScoreboardRef) {
+        liveScoreboardRef.off();
+        liveScoreboardRef = null;
+    }
+    
+    if (isEventDay || isPast) {
+        liveScoreboardRef = firebase.database().ref(`events/${event.id}/scorecards`);
+        liveScoreboardRef.on('value', (snapshot) => {
+            const liveScorecards = snapshot.val() || {};
+            renderLiveLeaderboard(container, liveScorecards, courseData, isEventDay, event);
         });
-        
-        html += `</div>`;
-        
-        // Add handicap rules info button
-        html += `<div style="text-align: center; margin-top: 8px;">
-            <button class="hcp-info-btn" onclick="document.getElementById('handicapRulesModal').classList.add('active')" title="View handicap rules">ℹ</button>
-            <span style="font-size: 12px; color: var(--text-secondary); margin-left: 4px;">Auto-handicap rules</span>
-        </div>`;
-        
-        container.innerHTML = html;
     } else {
-        if (isPast && courseData) {
-            container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px;">No scorecards submitted yet</div>';
-        } else if (!courseData) {
-            container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px; font-size: 13px;">Course data not available for scoring</div>';
+        // No scores yet for future events
+        if (courseData) {
+            container.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:12px; font-size:13px;">Live leaderboard available on event day</div>';
         } else {
-            container.innerHTML = '';
+            container.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:12px; font-size:13px;">Course data not available for scoring</div>';
         }
     }
+}
+
+function renderLiveLeaderboard(container, scorecards, courseData, isLive, event) {
+    if (!scorecards || Object.keys(scorecards).length === 0) {
+        if (isLive) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:16px;">
+                    <div class="live-badge">● LIVE</div>
+                    <div style="color:var(--text-secondary); font-size:13px; margin-top:8px;">Waiting for scores...</div>
+                </div>`;
+        } else {
+            container.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:12px;">No scorecards submitted yet</div>';
+        }
+        return;
+    }
+    
+    // Build leaderboard entries
+    const entries = Object.entries(scorecards)
+        .map(([playerId, data]) => {
+            const player = allPlayers.find(p => p.id === playerId);
+            const holesCompleted = data.holesCompleted || (data.holeScores ? data.holeScores.filter(s => s !== null && s > 0).length : 0);
+            return {
+                playerId,
+                name: player ? player.displayName : 'Unknown',
+                stablefordPoints: data.stablefordPoints || 0,
+                totalGross: data.totalGross || 0,
+                courseHandicap: data.courseHandicap || 0,
+                holesCompleted: holesCompleted,
+                isFinalized: data.isFinalized || false,
+                lastUpdated: data.lastUpdated || ''
+            };
+        })
+        .sort((a, b) => {
+            // Sort by: finalized first, then stableford desc, then holes completed desc
+            if (a.isFinalized !== b.isFinalized) return b.isFinalized - a.isFinalized;
+            if (b.stablefordPoints !== a.stablefordPoints) return b.stablefordPoints - a.stablefordPoints;
+            return b.holesCompleted - a.holesCompleted;
+        });
+    
+    let html = '';
+    
+    // Live badge
+    const anyActive = entries.some(e => !e.isFinalized && e.holesCompleted > 0);
+    if (isLive || anyActive) {
+        html += '<div class="live-badge">● LIVE</div>';
+    }
+    
+    html += `
+        <div class="scores-leaderboard">
+            <div class="score-leaderboard-row header">
+                <span>#</span>
+                <span>Player</span>
+                <span>Thru</span>
+                <span>Pts</span>
+            </div>
+    `;
+    
+    entries.forEach((sc, index) => {
+        const posClass = index === 0 ? 'pos-1' : index === 1 ? 'pos-2' : index === 2 ? 'pos-3' : '';
+        const isMe = sc.playerId === currentUser.uid;
+        const thruText = sc.isFinalized ? 'F' : sc.holesCompleted > 0 ? sc.holesCompleted : '-';
+        const thruClass = sc.isFinalized ? 'thru-final' : sc.holesCompleted > 0 ? 'thru-active' : 'thru-waiting';
+        
+        // Time since last update
+        let lastUpdateText = '';
+        if (!sc.isFinalized && sc.lastUpdated && sc.holesCompleted > 0) {
+            const mins = Math.floor((Date.now() - new Date(sc.lastUpdated).getTime()) / 60000);
+            if (mins < 2) lastUpdateText = 'just now';
+            else if (mins < 60) lastUpdateText = `${mins}m ago`;
+        }
+        
+        html += `
+            <div class="score-leaderboard-row ${isMe ? 'current-user' : ''}">
+                <span class="score-position ${posClass}">${index + 1}</span>
+                <span class="score-player-name">
+                    ${sc.name} 
+                    <small style="color:var(--text-secondary);">(${sc.courseHandicap})</small>
+                    ${lastUpdateText ? `<span class="last-update-badge">${lastUpdateText}</span>` : ''}
+                </span>
+                <span class="score-thru ${thruClass}">${thruText}</span>
+                <span class="score-stableford">${sc.stablefordPoints}</span>
+            </div>
+        `;
+    });
+    
+    html += `</div>`;
+    
+    // Handicap rules info
+    html += `<div style="text-align: center; margin-top: 8px;">
+        <button class="hcp-info-btn" onclick="document.getElementById('handicapRulesModal').classList.add('active')" title="View handicap rules">ℹ</button>
+        <span style="font-size: 12px; color: var(--text-secondary); margin-left: 4px;">Auto-handicap rules</span>
+    </div>`;
+    
+    container.innerHTML = html;
 }
 function isToday(date) {
     const today = new Date();

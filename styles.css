@@ -2210,6 +2210,77 @@ body {
     }
 }
 
+/* ===== LIVE SCORING INDICATORS ===== */
+.live-badge {
+    display: inline-block;
+    background: #e53935;
+    color: white;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    animation: livePulse 2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.live-save-status {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.live-save-status.live {
+    background: #e53935;
+    color: white;
+    animation: livePulse 2s ease-in-out infinite;
+}
+
+.live-save-status.saved {
+    background: var(--success-color);
+    color: white;
+}
+
+.live-save-status.error {
+    background: var(--error-color);
+    color: white;
+}
+
+.score-thru {
+    font-weight: 700;
+    font-size: 12px;
+    text-align: center;
+}
+
+.thru-final {
+    color: var(--text-primary);
+    font-weight: 800;
+}
+
+.thru-active {
+    color: #e53935;
+}
+
+.thru-waiting {
+    color: var(--text-secondary);
+}
+
+.last-update-badge {
+    display: inline-block;
+    font-size: 9px;
+    color: #e53935;
+    margin-left: 4px;
+    font-weight: 400;
+}
+
 /* ===== ORDER OF MERIT ===== */
 .oom-info-bar {
     display: flex;
