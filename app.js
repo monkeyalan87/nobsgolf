@@ -7,13 +7,11 @@ let currentView = 'newsfeed';
 let selectedEventId = null;
 let selectedPhotoFile = null;
 let currentMonth = new Date();
-
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', () => {
     initializeAuth();
     setupEventListeners();
 });
-
 // ===== AUTHENTICATION =====
 function initializeAuth() {
     firebase.auth().onAuthStateChanged(user => {
@@ -25,7 +23,6 @@ function initializeAuth() {
         }
     });
 }
-
 async function loadUserProfile() {
     try {
         const userRef = firebase.database().ref(`users/${currentUser.uid}`);
@@ -45,7 +42,6 @@ async function loadUserProfile() {
         console.error(error);
     }
 }
-
 async function createUserProfile() {
     const name = prompt('Please enter your name:') || 'User';
     const handicap = parseFloat(prompt('Please enter your handicap:') || '18');
@@ -66,7 +62,6 @@ async function createUserProfile() {
         console.error(error);
     }
 }
-
 // ===== SETUP EVENT LISTENERS =====
 function setupEventListeners() {
     // Auth tabs
@@ -195,7 +190,6 @@ function setupEventListeners() {
         loadLeagueStandingsV2(e.target.value);
     });
 }
-
 // ===== AUTH HANDLERS =====
 async function handleSignIn() {
     const email = document.getElementById('signinEmail').value;
@@ -207,7 +201,6 @@ async function handleSignIn() {
         document.getElementById('authError').textContent = error.message;
     }
 }
-
 async function handleSignUp() {
     const name = document.getElementById('signupName').value;
     const email = document.getElementById('signupEmail').value;
@@ -236,7 +229,6 @@ async function handleSignUp() {
         document.getElementById('authError').textContent = error.message;
     }
 }
-
 async function handleGoogleSignIn(isSignUp = false) {
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({
@@ -273,7 +265,6 @@ async function handleGoogleSignIn(isSignUp = false) {
         }
     }
 }
-
 async function handleAppleSignIn(isSignUp = false) {
     const provider = new firebase.auth.OAuthProvider('apple.com');
     provider.addScope('email');
@@ -311,7 +302,6 @@ async function handleAppleSignIn(isSignUp = false) {
         }
     }
 }
-
 async function handleLogout() {
     try {
         await firebase.auth().signOut();
@@ -323,7 +313,6 @@ async function handleLogout() {
         showToast('Error logging out', 'error');
     }
 }
-
 // ===== DATA LOADING =====
 function loadAllData() {
     loadEvents();
@@ -331,7 +320,6 @@ function loadAllData() {
     loadPosts();
     updateComposerAvatar();
 }
-
 function loadEvents() {
     const eventsRef = firebase.database().ref('events');
     
@@ -344,13 +332,144 @@ function loadEvents() {
             });
         });
         
+        // Auto-seed 2026 events if database is empty
+        if (allEvents.length === 0) {
+            seedDefaultEvents();
+            return; // Will re-trigger via the .on('value') listener
+        }
+        
         allEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
         renderCalendar();
         renderUpcomingEvents();
         renderAllEvents();
     });
 }
-
+async function seedDefaultEvents() {
+    console.log('Seeding 2026 default events...');
+    const events = {
+        "event_conwy": {
+            name: "Conwy Golf Club",
+            venue: "Conwy Golf Club",
+            date: "2026-04-30",
+            time: "09:00",
+            cost: 45,
+            maxPlayers: 16,
+            description: "Championship links course on the North Wales coast with stunning views of Conwy Mountain, the estuary, and the Great Orme. Host of the 2021 Curtis Cup and Wales' only Open Qualifying venue.",
+            countsForLeague: true,
+            createdBy: "admin",
+            createdAt: "2026-01-30T00:00:00.000Z",
+        },
+        "event_manchester": {
+            name: "Manchester Golf Club",
+            venue: "Manchester Golf Club, Middleton",
+            date: "2026-05-15",
+            time: "09:30",
+            cost: 50,
+            maxPlayers: 16,
+            description: "Harry Colt masterpiece set on 247 acres of moorland and heathland. Widely regarded as Lancashire's best inland course, just 20 minutes from Manchester city centre.",
+            countsForLeague: true,
+            createdBy: "admin",
+            createdAt: "2026-01-30T00:00:00.000Z",
+        },
+        "event_dunham": {
+            name: "Dunham Forest Golf Club",
+            venue: "Dunham Forest Golf Club",
+            date: "2026-06-19",
+            time: "10:00",
+            cost: 40,
+            maxPlayers: 16,
+            description: "Parkland course set in beautiful Cheshire countryside. Challenging layout with mature trees and well-maintained greens. A hidden gem in the North West.",
+            countsForLeague: true,
+            createdBy: "admin",
+            createdAt: "2026-01-30T00:00:00.000Z",
+        },
+        "event_caldy": {
+            name: "Caldy Golf Club",
+            venue: "Caldy Golf Club, Wirral",
+            date: "2026-07-17",
+            time: "09:00",
+            cost: 55,
+            maxPlayers: 16,
+            description: "Stunning heathland/links course on the Wirral Peninsula with panoramic views over the Dee Estuary to Wales. One of England's finest courses with superb conditions year-round.",
+            countsForLeague: true,
+            createdBy: "admin",
+            createdAt: "2026-01-30T00:00:00.000Z",
+        },
+        "event_valeroyal": {
+            name: "Vale Royal Golf Club",
+            venue: "Vale Royal Abbey Golf Club",
+            date: "2026-08-28",
+            time: "10:00",
+            cost: 35,
+            maxPlayers: 16,
+            description: "Picturesque parkland course set in the grounds of the historic Vale Royal Abbey in Cheshire. Tree-lined fairways and challenging water features make for a memorable round.",
+            countsForLeague: true,
+            createdBy: "admin",
+            createdAt: "2026-01-30T00:00:00.000Z",
+        },
+        "event_porthmadog": {
+            name: "Annual Away Trip - Porthmadog",
+            venue: "Porthmadog Golf Club",
+            date: "2026-09-17",
+            time: "09:00",
+            cost: 40,
+            maxPlayers: 16,
+            description: "DAY 1 of Annual Away Trip. Traditional Welsh links course with spectacular views of Snowdonia, Harlech Castle, and Cardigan Bay. Known locally as 'The Borth', this seaside course offers a true links challenge.",
+            countsForLeague: true,
+            createdBy: "admin",
+            createdAt: "2026-01-30T00:00:00.000Z",
+        },
+        "event_royalstdavids": {
+            name: "Annual Away Trip - Royal St David's",
+            venue: "Royal St David's Golf Club, Harlech",
+            date: "2026-09-18",
+            time: "09:00",
+            cost: 65,
+            maxPlayers: 16,
+            description: "DAY 2 of Annual Away Trip. Championship links ranked in the World's Top 100. Nestled below the dramatic Harlech Castle with stunning mountain and sea views. A bucket-list course for any golfer.",
+            countsForLeague: true,
+            createdBy: "admin",
+            createdAt: "2026-01-30T00:00:00.000Z",
+        },
+        "event_prestatyn": {
+            name: "Prestatyn Golf Club",
+            venue: "Prestatyn Golf Club",
+            date: "2026-10-16",
+            time: "09:30",
+            cost: 40,
+            maxPlayers: 16,
+            description: "Classic links course on the North Wales coast. Natural terrain with challenging dunes, undulating fairways, and fast greens. Views across the Irish Sea make this a must-play venue.",
+            countsForLeague: true,
+            createdBy: "admin",
+            createdAt: "2026-01-30T00:00:00.000Z",
+        },
+        "event_leasowe": {
+            name: "Christmas Team Game & Lunch",
+            venue: "Leasowe Golf Club",
+            date: "2026-12-18",
+            time: "10:00",
+            cost: 45,
+            maxPlayers: 20,
+            description: "Season finale! Christmas team competition followed by festive lunch at the clubhouse. Links course on the Wirral with views of Liverpool Bay. A fun day to round off the year with prizes, food, and Christmas cheer!",
+            countsForLeague: false,
+            createdBy: "admin",
+            createdAt: "2026-01-30T00:00:00.000Z",
+        }
+    };
+    
+    try {
+        const updates = {};
+        for (const [key, event] of Object.entries(events)) {
+            updates[`events/${key}`] = event;
+        }
+        await firebase.database().ref().update(updates);
+        console.log('2026 events seeded successfully');
+        showToast('2026 season events loaded', 'success');
+    } catch (error) {
+        console.error('Error seeding events:', error);
+        showToast('Error loading events: ' + error.message, 'error');
+    }
+}
 function loadPlayers() {
     const usersRef = firebase.database().ref('users');
     
@@ -366,7 +485,6 @@ function loadPlayers() {
         renderPlayers();
     });
 }
-
 function loadPosts() {
     const postsRef = firebase.database().ref('posts');
     
@@ -384,7 +502,6 @@ function loadPosts() {
         renderPosts();
     });
 }
-
 // ===== NEWSFEED FUNCTIONS =====
 function updateComposerAvatar() {
     if (!currentUser) return;
@@ -397,7 +514,6 @@ function updateComposerAvatar() {
         }
     });
 }
-
 function handlePhotoSelect(event) {
     console.log('handlePhotoSelect called', event);
     const file = event.target.files[0];
@@ -446,13 +562,11 @@ function handlePhotoSelect(event) {
     };
     reader.readAsDataURL(file);
 }
-
 function clearPhoto() {
     selectedPhotoFile = null;
     document.getElementById('photoPreview').classList.add('hidden');
     document.getElementById('photoInput').value = '';
 }
-
 async function createPost() {
     const content = document.getElementById('postContent').value.trim();
     
@@ -503,7 +617,6 @@ async function createPost() {
         showToast('Error creating post', 'error');
     }
 }
-
 function fileToBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -512,11 +625,9 @@ function fileToBase64(file) {
         reader.readAsDataURL(file);
     });
 }
-
 function renderPosts() {
     filterPosts('all');
 }
-
 function filterPosts(filter) {
     const container = document.getElementById('postsList');
     
@@ -559,7 +670,6 @@ function filterPosts(filter) {
         });
     });
 }
-
 function createPostHTML(post) {
     const author = allPlayers.find(p => p.id === post.authorId);
     const initials = author ? author.displayName.split(' ').map(n => n[0]).join('') : '?';
@@ -612,7 +722,6 @@ function createPostHTML(post) {
         </div>
     `;
 }
-
 function renderComments(post) {
     if (!post.comments || Object.keys(post.comments).length === 0) {
         return '';
@@ -635,7 +744,6 @@ function renderComments(post) {
         `;
     }).join('');
 }
-
 async function toggleLike(postId) {
     try {
         const post = allPosts.find(p => p.id === postId);
@@ -659,12 +767,10 @@ async function toggleLike(postId) {
         showToast('Error updating like', 'error');
     }
 }
-
 function toggleComments(postId) {
     const commentsSection = document.getElementById(`comments-${postId}`);
     commentsSection.classList.toggle('hidden');
 }
-
 async function addComment(postId) {
     const input = document.getElementById(`comment-input-${postId}`);
     const text = input.value.trim();
@@ -690,7 +796,6 @@ async function addComment(postId) {
         showToast('Error adding comment', 'error');
     }
 }
-
 function getTimeAgo(timestamp) {
     const now = new Date();
     const postTime = new Date(timestamp);
@@ -706,7 +811,6 @@ function getTimeAgo(timestamp) {
     
     return postTime.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
-
 async function loadLeagueStandings(season = '2025') {
     try {
         // Get all events for the season that count for league
@@ -769,7 +873,6 @@ async function loadLeagueStandings(season = '2025') {
         console.error('Error loading league standings:', error);
     }
 }
-
 // ===== CALENDAR RENDERING =====
 function renderCalendar() {
     const year = currentMonth.getFullYear();
@@ -818,7 +921,6 @@ function renderCalendar() {
         addCalendarDay(day, true, new Date(year, month + 1, day));
     }
 }
-
 function addCalendarDay(day, otherMonth, date) {
     const calendarGrid = document.getElementById('calendarGrid');
     const dayElement = document.createElement('div');
@@ -853,12 +955,10 @@ function addCalendarDay(day, otherMonth, date) {
     
     calendarGrid.appendChild(dayElement);
 }
-
 function changeMonth(delta) {
     currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + delta, 1);
     renderCalendar();
 }
-
 function showEventsForDate(date) {
     const dateEvents = allEvents.filter(event => {
         const eventDate = new Date(event.date);
@@ -869,7 +969,6 @@ function showEventsForDate(date) {
         openEventDetails(dateEvents[0].id);
     }
 }
-
 // ===== EVENT RENDERING =====
 function renderUpcomingEvents() {
     const container = document.getElementById('upcomingEventsList');
@@ -894,11 +993,9 @@ function renderUpcomingEvents() {
         });
     });
 }
-
 function renderAllEvents() {
     filterEvents('all');
 }
-
 function filterEvents(filter) {
     const container = document.getElementById('eventsList');
     const today = new Date();
@@ -926,7 +1023,6 @@ function filterEvents(filter) {
         });
     });
 }
-
 function createEventCardHTML(event) {
     const eventDate = new Date(event.date);
     const participantCount = event.participants ? Object.keys(event.participants).length : 0;
@@ -973,7 +1069,6 @@ function createEventCardHTML(event) {
         </div>
     `;
 }
-
 function getParticipantAvatars(participants) {
     if (!participants) return '';
     
@@ -984,7 +1079,6 @@ function getParticipantAvatars(participants) {
         return `<div class="participant-avatar">${initials}</div>`;
     }).join('');
 }
-
 // ===== LEAGUE RENDERING =====
 function renderLeagueTable(standings, totalEvents) {
     const container = document.getElementById('leagueTable');
@@ -1031,7 +1125,6 @@ function renderLeagueTable(standings, totalEvents) {
     
     container.innerHTML = html;
 }
-
 // ===== PLAYERS RENDERING =====
 function renderPlayers() {
     const container = document.getElementById('playersList');
@@ -1043,7 +1136,6 @@ function renderPlayers() {
     
     container.innerHTML = allPlayers.map(player => createPlayerCardHTML(player)).join('');
 }
-
 function createPlayerCardHTML(player) {
     const initials = player.displayName.split(' ').map(n => n[0]).join('');
     
@@ -1069,7 +1161,6 @@ function createPlayerCardHTML(player) {
         </div>
     `;
 }
-
 function filterPlayers(searchTerm) {
     const filteredPlayers = allPlayers.filter(player =>
         player.displayName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -1082,7 +1173,6 @@ function filterPlayers(searchTerm) {
         container.innerHTML = filteredPlayers.map(player => createPlayerCardHTML(player)).join('');
     }
 }
-
 // ===== PROFILE RENDERING =====
 function renderProfile() {
     if (!currentUser) return;
@@ -1117,7 +1207,6 @@ function renderProfile() {
         loadRegisteredEvents();
     });
 }
-
 function calculateFinancialSummary() {
     const currentYear = new Date().getFullYear();
     
@@ -1147,7 +1236,6 @@ function calculateFinancialSummary() {
     document.getElementById('totalOwed').textContent = `£${totalOwed.toFixed(2)}`;
     document.getElementById('totalCommitted').textContent = `£${totalCommitted.toFixed(2)}`;
 }
-
 function updateProfilePhoto(userData) {
     const photoDisplay = document.getElementById('profilePhotoDisplay');
     const initialsDisplay = document.getElementById('profilePhotoInitials');
@@ -1163,7 +1251,6 @@ function updateProfilePhoto(userData) {
         photoDisplay.style.background = 'var(--primary-blue)';
     }
 }
-
 function loadRegisteredEvents() {
     const container = document.getElementById('registeredEventsList');
     
@@ -1198,7 +1285,6 @@ function loadRegisteredEvents() {
     // Display all events by default
     displayFilteredEvents(userEvents, 'all');
 }
-
 function setupEventFilterListeners(userEvents) {
     const filterBtns = document.querySelectorAll('.event-filters .filter-btn');
     filterBtns.forEach(btn => {
@@ -1209,7 +1295,6 @@ function setupEventFilterListeners(userEvents) {
         });
     });
 }
-
 function displayFilteredEvents(userEvents, filter) {
     const container = document.getElementById('registeredEventsList');
     const now = new Date();
@@ -1261,7 +1346,6 @@ function displayFilteredEvents(userEvents, filter) {
         `;
     }).join('');
 }
-
 async function markAsPaidFromProfile(eventId) {
     try {
         await firebase.database().ref(`events/${eventId}/participants/${currentUser.uid}/paid`).set(true);
@@ -1272,7 +1356,6 @@ async function markAsPaidFromProfile(eventId) {
         console.error(error);
     }
 }
-
 function loadPaymentHistory() {
     const container = document.getElementById('paymentHistoryList');
     const userEvents = allEvents.filter(event => 
@@ -1298,7 +1381,6 @@ function loadPaymentHistory() {
         </div>
     `).join('');
 }
-
 // ===== MODALS =====
 function openEventModal(eventId = null) {
     const modal = document.getElementById('eventModal');
@@ -1331,7 +1413,6 @@ function openEventModal(eventId = null) {
         document.getElementById('eventCountsForLeague').checked = true;
     }
 }
-
 function openEventDetails(eventId) {
     const event = allEvents.find(e => e.id === eventId);
     if (!event) return;
@@ -1394,7 +1475,6 @@ function openEventDetails(eventId) {
     document.getElementById('leaveEventBtn').onclick = () => leaveEvent(eventId);
     document.getElementById('markPaidBtn').onclick = () => markAsPaid(eventId);
 }
-
 function renderParticipantsList(event) {
     const container = document.getElementById('participantsList');
     const participantCount = event.participants ? Object.keys(event.participants).length : 0;
@@ -1459,7 +1539,6 @@ function renderParticipantsList(event) {
     
     container.innerHTML = participantHTML;
 }
-
 function openEditProfileModal() {
     firebase.database().ref(`users/${currentUser.uid}`).once('value').then(snapshot => {
         const userData = snapshot.val();
@@ -1470,13 +1549,11 @@ function openEditProfileModal() {
         document.getElementById('editProfileModal').classList.add('active');
     });
 }
-
 function closeAllModals() {
     document.querySelectorAll('.modal').forEach(modal => {
         modal.classList.remove('active');
     });
 }
-
 // ===== EVENT ACTIONS =====
 async function saveEvent() {
     const eventId = document.getElementById('eventId').value;
@@ -1515,7 +1592,6 @@ async function saveEvent() {
         console.error(error);
     }
 }
-
 async function joinEvent(eventId) {
     console.log('Attempting to join event:', eventId);
     console.log('Current user:', currentUser);
@@ -1554,7 +1630,6 @@ async function joinEvent(eventId) {
         showToast(`Error joining event: ${error.message}`, 'error');
     }
 }
-
 async function leaveEvent(eventId) {
     if (!confirm('Are you sure you want to leave this event?')) return;
     
@@ -1580,7 +1655,6 @@ async function leaveEvent(eventId) {
         console.error(error);
     }
 }
-
 async function markAsPaid(eventId) {
     try {
         await firebase.database().ref(`events/${eventId}/participants/${currentUser.uid}/paid`).set(true);
@@ -1591,7 +1665,6 @@ async function markAsPaid(eventId) {
         console.error(error);
     }
 }
-
 async function saveProfile() {
     const name = document.getElementById('editProfileName').value;
     const handicap = parseFloat(document.getElementById('editProfileHandicap').value);
@@ -1624,7 +1697,6 @@ async function saveProfile() {
         console.error(error);
     }
 }
-
 async function handleProfilePhotoUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -1662,7 +1734,6 @@ async function handleProfilePhotoUpload(event) {
         console.error(error);
     }
 }
-
 // ===== VIEW SWITCHING =====
 function switchView(viewName) {
     currentView = viewName;
@@ -1692,7 +1763,6 @@ function switchView(viewName) {
         }
     }
 }
-
 // ===== UTILITY FUNCTIONS =====
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(screen => {
@@ -1700,7 +1770,6 @@ function showScreen(screenId) {
     });
     document.getElementById(screenId).classList.add('active');
 }
-
 function showToast(message, type = 'info') {
     const toast = document.getElementById('toast');
     toast.textContent = message;
@@ -1710,12 +1779,10 @@ function showToast(message, type = 'info') {
         toast.classList.remove('show');
     }, 3000);
 }
-
 function formatDate(date) {
     const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
     return date.toLocaleDateString('en-GB', options);
 }
-
 function getInitials(name) {
     if (!name) return 'U';
     const parts = name.trim().split(' ');
@@ -1724,7 +1791,6 @@ function getInitials(name) {
     }
     return parts.map(n => n[0]).join('').toUpperCase();
 }
-
 // ===== COURSE DATA =====
 // Par, Stroke Index per hole + Course Rating & Slope for yellow tees
 const COURSE_DATA = {
@@ -1861,12 +1927,10 @@ const COURSE_DATA = {
         ]
     }
 };
-
 // ===== STABLEFORD CALCULATION ENGINE =====
 function getCourseHandicap(handicapIndex, slope) {
     return Math.round(handicapIndex * slope / 113);
 }
-
 function getStrokesForHole(courseHandicap, holeSI) {
     // Full strokes: how many times does the SI fit in 18 allocations
     let strokes = 0;
@@ -1875,7 +1939,6 @@ function getStrokesForHole(courseHandicap, holeSI) {
     if (courseHandicap >= 36 + holeSI) strokes++;
     return strokes;
 }
-
 function calculateStablefordPoints(grossScore, par, strokesReceived) {
     if (!grossScore || grossScore <= 0) return 0;
     const netScore = grossScore - strokesReceived;
@@ -1884,7 +1947,6 @@ function calculateStablefordPoints(grossScore, par, strokesReceived) {
     const points = Math.max(0, 2 - diff);
     return points;
 }
-
 function getScoreClass(grossScore, par) {
     if (!grossScore) return '';
     const diff = grossScore - par;
@@ -1894,7 +1956,6 @@ function getScoreClass(grossScore, par) {
     if (diff === 1) return 'score-bogey';
     return 'score-double';
 }
-
 function getPointsClass(pts) {
     if (pts >= 5) return 'pts-5';
     if (pts >= 4) return 'pts-4';
@@ -1903,7 +1964,6 @@ function getPointsClass(pts) {
     if (pts >= 1) return 'pts-1';
     return 'pts-0';
 }
-
 // ===== SOCIETY AUTO-HANDICAP RULES =====
 function getHandicapChange(stablefordPoints, isWinner = false) {
     let change = 0;
@@ -1916,7 +1976,6 @@ function getHandicapChange(stablefordPoints, isWinner = false) {
     if (isWinner) change -= 1; // Event winner gets additional -1
     return change;
 }
-
 function getHandicapChangeText(stablefordPoints, isWinner = false) {
     const baseChange = getHandicapChange(stablefordPoints, false);
     const totalChange = getHandicapChange(stablefordPoints, isWinner);
@@ -1933,7 +1992,6 @@ function getHandicapChangeText(stablefordPoints, isWinner = false) {
     
     return text;
 }
-
 // ===== FIND COURSE DATA =====
 function findCourseData(venue) {
     // Direct match first
@@ -1957,13 +2015,11 @@ function findCourseData(venue) {
     
     return null;
 }
-
 // ===== SCORECARD MODAL LOGIC =====
 let currentScorecardEventId = null;
 let currentScorecardCourseData = null;
 let currentScorecardCourseHcp = 0;
 let scorecardScores = new Array(18).fill(null);
-
 function openScorecardModal(eventId) {
     const event = allEvents.find(e => e.id === eventId);
     if (!event) return;
@@ -2015,7 +2071,6 @@ function openScorecardModal(eventId) {
         document.getElementById('scorecardModal').classList.add('active');
     });
 }
-
 function buildScorecardGrid(containerId, startHole, endHole) {
     const container = document.getElementById(containerId);
     const courseData = currentScorecardCourseData;
@@ -2052,7 +2107,6 @@ function buildScorecardGrid(containerId, startHole, endHole) {
     }
     container.innerHTML = html;
 }
-
 function handleScoreInput(input, holeIndex) {
     let val = parseInt(input.value);
     if (isNaN(val) || val < 1) {
@@ -2084,7 +2138,6 @@ function handleScoreInput(input, holeIndex) {
         }
     }
 }
-
 function updateScorecardTotals() {
     const courseData = currentScorecardCourseData;
     let front9Gross = 0, back9Gross = 0;
@@ -2157,7 +2210,6 @@ function updateScorecardTotals() {
         previewEl.classList.add('hidden');
     }
 }
-
 async function submitScorecard() {
     const holesCompleted = scorecardScores.filter(s => s !== null).length;
     
@@ -2211,7 +2263,6 @@ async function submitScorecard() {
         showToast('Error submitting scorecard', 'error');
     }
 }
-
 async function applyHandicapAdjustment(stablefordPoints, eventId) {
     try {
         const userRef = firebase.database().ref(`users/${currentUser.uid}`);
@@ -2245,7 +2296,6 @@ async function applyHandicapAdjustment(stablefordPoints, eventId) {
         console.error('Error applying handicap adjustment:', error);
     }
 }
-
 // ===== UPDATE EVENT DETAILS TO SHOW SCORES =====
 function renderEventScoresSummary(event) {
     const container = document.getElementById('eventScoresSummary');
@@ -2333,19 +2383,16 @@ function renderEventScoresSummary(event) {
         }
     }
 }
-
 function isToday(date) {
     const today = new Date();
     return date.getDate() === today.getDate() &&
            date.getMonth() === today.getMonth() &&
            date.getFullYear() === today.getFullYear();
 }
-
 // ===== UPDATE LEAGUE STANDINGS TO USE STABLEFORD =====
 // ===== ORDER OF MERIT POINTS TABLE =====
 const OOM_POINTS = [15, 12, 10, 8, 6, 5, 4, 3, 2, 1]; // Positions 1-10
 const OOM_BEST_OF = 5; // Best 5 event scores count
-
 async function loadLeagueStandingsV2(season = '2026') {
     try {
         const leagueEvents = allEvents.filter(event => {
@@ -2450,7 +2497,6 @@ async function loadLeagueStandingsV2(season = '2026') {
         console.error('Error loading OOM standings:', error);
     }
 }
-
 function renderOOMTable(standings, leagueEvents) {
     const container = document.getElementById('leagueTable');
     const breakdownContainer = document.getElementById('oomEventBreakdown');
@@ -2614,7 +2660,6 @@ function renderOOMTable(standings, leagueEvents) {
         };
     }
 }
-
 function renderPlayerBreakdown(player, eventHeaders) {
     if (!player.eventResults || player.eventResults.length === 0) {
         return '<div class="oom-no-results">No results</div>';
@@ -2647,19 +2692,14 @@ function renderPlayerBreakdown(player, eventHeaders) {
     html += '</div>';
     return html;
 }
-
 function togglePlayerBreakdown(playerId) {
     const el = document.getElementById(`breakdown-${playerId}`);
     if (el) el.classList.toggle('hidden');
 }
-
 function getOrdinal(n) {
     const s = ['th', 'st', 'nd', 'rd'];
     const v = n % 100;
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
-
 // (duplicate findCourseData removed — using version above)
-
 // (System 2 scoring code removed — using scorecardModal system above with society auto-handicap rules)
-
