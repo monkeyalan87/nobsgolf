@@ -163,6 +163,9 @@ function setupEventListeners() {
     document.getElementById('saveEventBtn').addEventListener('click', saveEvent);
     document.getElementById('saveProfileBtn').addEventListener('click', saveProfile);
     
+    // Submit scorecard
+    document.getElementById('submitScorecardBtn').addEventListener('click', submitScorecard);
+    
     // Profile button
     document.getElementById('editProfileBtn').addEventListener('click', openEditProfileModal);
     
@@ -189,7 +192,7 @@ function setupEventListeners() {
     
     // League season filter
     document.getElementById('leagueSeasonFilter').addEventListener('change', (e) => {
-        loadLeagueStandings(e.target.value);
+        loadLeagueStandingsV2(e.target.value);
     });
 }
 
@@ -726,9 +729,24 @@ async function loadLeagueStandings(season = '2025') {
         
         // Calculate points from scores
         for (const event of leagueEvents) {
-            if (event.scores) {
+            // Prefer scorecards (new system) over legacy scores
+            if (event.scorecards) {
+                const scores = Object.entries(event.scorecards)
+                    .filter(([, card]) => card.stableford > 0)
+                    .map(([playerId, card]) => ({ playerId, stableford: card.stableford }))
+                    .sort((a, b) => b.stableford - a.stableford); // Highest Stableford first
+                
+                scores.forEach(({ playerId }, index) => {
+                    if (playerStats[playerId]) {
+                        const points = Math.max(0, scores.length - index);
+                        playerStats[playerId].points += points;
+                        playerStats[playerId].eventsPlayed++;
+                    }
+                });
+            } else if (event.scores) {
+                // Legacy: scores stored as stableford points (higher = better)
                 const scores = Object.entries(event.scores);
-                scores.sort((a, b) => a[1] - b[1]); // Sort by score
+                scores.sort((a, b) => b[1] - a[1]); // Highest stableford first
                 
                 scores.forEach(([playerId, score], index) => {
                     if (playerStats[playerId]) {
@@ -1347,6 +1365,18 @@ function openEventDetails(eventId) {
         </div>
     `;
     
+    // Show course data if available
+    const course = findCourseData(event.venue);
+    if (course) {
+        detailsHTML += `
+            <div style="display:flex; justify-content:space-around; background:#f0f8ff; border-radius:8px; padding:8px; margin-top:12px; font-size:13px; font-weight:600; color:var(--primary-blue);">
+                <span>Par ${course.par}</span>
+                <span>CR ${course.courseRating}</span>
+                <span>Slope ${course.slope}</span>
+            </div>
+        `;
+    }
+    
     if (event.description) {
         detailsHTML += `<p style="margin-top: 16px;">${event.description}</p>`;
     }
@@ -1355,6 +1385,9 @@ function openEventDetails(eventId) {
     
     // Participants list
     renderParticipantsList(event);
+    
+    // Render scores section
+    renderEventScoresSummary(event);
     
     // Setup button handlers
     document.getElementById('joinEventBtn').onclick = () => joinEvent(eventId);
@@ -1650,7 +1683,7 @@ function switchView(viewName) {
         
         // Load view-specific data
         if (viewName === 'league') {
-            loadLeagueStandings('2025');
+            loadLeagueStandingsV2('2026');
         } else if (viewName === 'profile') {
             renderProfile();
         } else if (viewName === 'events') {
@@ -1691,3 +1724,942 @@ function getInitials(name) {
     }
     return parts.map(n => n[0]).join('').toUpperCase();
 }
+
+// ===== COURSE DATA =====
+// Par, Stroke Index per hole + Course Rating & Slope for yellow tees
+const COURSE_DATA = {
+    'Conwy Golf Club': {
+        courseRating: 71.0, slope: 133, par: 72,
+        holes: [
+            { par: 4, si: 13 }, { par: 3, si: 15 }, { par: 4, si: 9 },
+            { par: 4, si: 5 },  { par: 4, si: 1 },  { par: 3, si: 17 },
+            { par: 4, si: 7 },  { par: 4, si: 3 },  { par: 5, si: 11 },
+            { par: 5, si: 10 }, { par: 4, si: 4 },  { par: 5, si: 6 },
+            { par: 3, si: 12 }, { par: 5, si: 16 }, { par: 3, si: 18 },
+            { par: 4, si: 8 },  { par: 4, si: 2 },  { par: 4, si: 14 }
+        ]
+    },
+    'Manchester Golf Club': {
+        courseRating: 70.0, slope: 128, par: 72,
+        holes: [
+            { par: 4, si: 11 }, { par: 4, si: 5 },  { par: 3, si: 17 },
+            { par: 4, si: 3 },  { par: 5, si: 9 },  { par: 4, si: 13 },
+            { par: 4, si: 7 },  { par: 3, si: 15 }, { par: 5, si: 1 },
+            { par: 4, si: 6 },  { par: 4, si: 12 }, { par: 4, si: 2 },
+            { par: 3, si: 16 }, { par: 4, si: 10 }, { par: 4, si: 4 },
+            { par: 3, si: 18 }, { par: 4, si: 8 },  { par: 4, si: 14 }
+        ]
+    },
+    'Manchester Golf Club, Middleton': {
+        courseRating: 70.0, slope: 128, par: 72,
+        holes: [
+            { par: 4, si: 11 }, { par: 4, si: 5 },  { par: 3, si: 17 },
+            { par: 4, si: 3 },  { par: 5, si: 9 },  { par: 4, si: 13 },
+            { par: 4, si: 7 },  { par: 3, si: 15 }, { par: 5, si: 1 },
+            { par: 4, si: 6 },  { par: 4, si: 12 }, { par: 4, si: 2 },
+            { par: 3, si: 16 }, { par: 4, si: 10 }, { par: 4, si: 4 },
+            { par: 3, si: 18 }, { par: 4, si: 8 },  { par: 4, si: 14 }
+        ]
+    },
+    'Dunham Forest Golf Club': {
+        courseRating: 70.9, slope: 143, par: 72,
+        holes: [
+            { par: 4, si: 7 },  { par: 3, si: 15 }, { par: 4, si: 11 },
+            { par: 5, si: 3 },  { par: 4, si: 1 },  { par: 4, si: 13 },
+            { par: 4, si: 5 },  { par: 3, si: 17 }, { par: 5, si: 9 },
+            { par: 4, si: 4 },  { par: 4, si: 10 }, { par: 5, si: 2 },
+            { par: 3, si: 18 }, { par: 4, si: 8 },  { par: 4, si: 6 },
+            { par: 4, si: 14 }, { par: 3, si: 16 }, { par: 5, si: 12 }
+        ]
+    },
+    'Caldy Golf Club': {
+        courseRating: 71.3, slope: 130, par: 72,
+        holes: [
+            { par: 5, si: 11 }, { par: 4, si: 7 },  { par: 4, si: 3 },
+            { par: 4, si: 13 }, { par: 3, si: 17 }, { par: 4, si: 5 },
+            { par: 4, si: 1 },  { par: 3, si: 15 }, { par: 5, si: 9 },
+            { par: 4, si: 4 },  { par: 4, si: 10 }, { par: 4, si: 2 },
+            { par: 4, si: 12 }, { par: 3, si: 18 }, { par: 5, si: 6 },
+            { par: 4, si: 8 },  { par: 4, si: 14 }, { par: 3, si: 16 }
+        ]
+    },
+    'Caldy Golf Club, Wirral': {
+        courseRating: 71.3, slope: 130, par: 72,
+        holes: [
+            { par: 5, si: 11 }, { par: 4, si: 7 },  { par: 4, si: 3 },
+            { par: 4, si: 13 }, { par: 3, si: 17 }, { par: 4, si: 5 },
+            { par: 4, si: 1 },  { par: 3, si: 15 }, { par: 5, si: 9 },
+            { par: 4, si: 4 },  { par: 4, si: 10 }, { par: 4, si: 2 },
+            { par: 4, si: 12 }, { par: 3, si: 18 }, { par: 5, si: 6 },
+            { par: 4, si: 8 },  { par: 4, si: 14 }, { par: 3, si: 16 }
+        ]
+    },
+    'Vale Royal Abbey Golf Club': {
+        courseRating: 69.8, slope: 125, par: 72,
+        holes: [
+            { par: 4, si: 5 },  { par: 4, si: 9 },  { par: 3, si: 17 },
+            { par: 5, si: 3 },  { par: 4, si: 7 },  { par: 4, si: 11 },
+            { par: 4, si: 1 },  { par: 3, si: 15 }, { par: 5, si: 13 },
+            { par: 4, si: 6 },  { par: 4, si: 4 },  { par: 5, si: 10 },
+            { par: 3, si: 18 }, { par: 4, si: 2 },  { par: 4, si: 12 },
+            { par: 4, si: 8 },  { par: 3, si: 16 }, { par: 4, si: 14 }
+        ]
+    },
+    'Porthmadog Golf Club': {
+        courseRating: 69.2, slope: 120, par: 71,
+        holes: [
+            { par: 4, si: 10 }, { par: 4, si: 4 },  { par: 4, si: 14 },
+            { par: 4, si: 2 },  { par: 3, si: 16 }, { par: 4, si: 8 },
+            { par: 5, si: 6 },  { par: 4, si: 12 }, { par: 3, si: 18 },
+            { par: 4, si: 3 },  { par: 3, si: 15 }, { par: 4, si: 1 },
+            { par: 4, si: 11 }, { par: 4, si: 5 },  { par: 5, si: 7 },
+            { par: 3, si: 17 }, { par: 5, si: 9 },  { par: 4, si: 13 }
+        ]
+    },
+    "Royal St David's Golf Club": {
+        courseRating: 72.0, slope: 129, par: 69,
+        holes: [
+            { par: 4, si: 9 },  { par: 4, si: 3 },  { par: 4, si: 1 },
+            { par: 4, si: 11 }, { par: 4, si: 7 },  { par: 4, si: 13 },
+            { par: 4, si: 5 },  { par: 5, si: 15 }, { par: 3, si: 17 },
+            { par: 4, si: 4 },  { par: 4, si: 10 }, { par: 4, si: 2 },
+            { par: 4, si: 8 },  { par: 3, si: 14 }, { par: 4, si: 6 },
+            { par: 4, si: 12 }, { par: 4, si: 16 }, { par: 3, si: 18 }
+        ]
+    },
+    "Royal St David's Golf Club, Harlech": {
+        courseRating: 72.0, slope: 129, par: 69,
+        holes: [
+            { par: 4, si: 9 },  { par: 4, si: 3 },  { par: 4, si: 1 },
+            { par: 4, si: 11 }, { par: 4, si: 7 },  { par: 4, si: 13 },
+            { par: 4, si: 5 },  { par: 5, si: 15 }, { par: 3, si: 17 },
+            { par: 4, si: 4 },  { par: 4, si: 10 }, { par: 4, si: 2 },
+            { par: 4, si: 8 },  { par: 3, si: 14 }, { par: 4, si: 6 },
+            { par: 4, si: 12 }, { par: 4, si: 16 }, { par: 3, si: 18 }
+        ]
+    },
+    'Prestatyn Golf Club': {
+        courseRating: 71.0, slope: 128, par: 72,
+        holes: [
+            { par: 4, si: 5 },  { par: 4, si: 11 }, { par: 5, si: 3 },
+            { par: 3, si: 17 }, { par: 4, si: 7 },  { par: 4, si: 1 },
+            { par: 4, si: 13 }, { par: 4, si: 9 },  { par: 5, si: 15 },
+            { par: 3, si: 14 }, { par: 4, si: 4 },  { par: 4, si: 8 },
+            { par: 4, si: 10 }, { par: 4, si: 2 },  { par: 3, si: 18 },
+            { par: 5, si: 6 },  { par: 4, si: 12 }, { par: 3, si: 16 }
+        ]
+    },
+    'Leasowe Golf Club': {
+        courseRating: 70.1, slope: 131, par: 71,
+        holes: [
+            { par: 4, si: 17 }, { par: 4, si: 9 },  { par: 3, si: 13 },
+            { par: 4, si: 1 },  { par: 4, si: 7 },  { par: 5, si: 11 },
+            { par: 4, si: 5 },  { par: 4, si: 15 }, { par: 4, si: 3 },
+            { par: 4, si: 4 },  { par: 4, si: 16 }, { par: 3, si: 18 },
+            { par: 4, si: 8 },  { par: 4, si: 14 }, { par: 4, si: 6 },
+            { par: 4, si: 2 },  { par: 3, si: 10 }, { par: 4, si: 12 }
+        ]
+    }
+};
+
+// ===== STABLEFORD CALCULATION ENGINE =====
+function getCourseHandicap(handicapIndex, slope) {
+    return Math.round(handicapIndex * slope / 113);
+}
+
+function getStrokesForHole(courseHandicap, holeSI) {
+    // Full strokes: how many times does the SI fit in 18 allocations
+    let strokes = 0;
+    if (courseHandicap >= holeSI) strokes++;
+    if (courseHandicap >= 18 + holeSI) strokes++;
+    if (courseHandicap >= 36 + holeSI) strokes++;
+    return strokes;
+}
+
+function calculateStablefordPoints(grossScore, par, strokesReceived) {
+    if (!grossScore || grossScore <= 0) return 0;
+    const netScore = grossScore - strokesReceived;
+    const diff = netScore - par;
+    // 2 = par, +1 per under, -1 per over, min 0
+    const points = Math.max(0, 2 - diff);
+    return points;
+}
+
+function getScoreClass(grossScore, par) {
+    if (!grossScore) return '';
+    const diff = grossScore - par;
+    if (diff <= -2) return 'score-eagle';
+    if (diff === -1) return 'score-birdie';
+    if (diff === 0) return 'score-par';
+    if (diff === 1) return 'score-bogey';
+    return 'score-double';
+}
+
+function getPointsClass(pts) {
+    if (pts >= 5) return 'pts-5';
+    if (pts >= 4) return 'pts-4';
+    if (pts >= 3) return 'pts-3';
+    if (pts >= 2) return 'pts-2';
+    if (pts >= 1) return 'pts-1';
+    return 'pts-0';
+}
+
+// ===== SOCIETY AUTO-HANDICAP RULES =====
+function getHandicapChange(stablefordPoints, isWinner = false) {
+    let change = 0;
+    if (stablefordPoints <= 17) change = 2;
+    else if (stablefordPoints <= 29) change = 1;
+    else if (stablefordPoints <= 37) change = 0;
+    else if (stablefordPoints <= 42) change = -1;
+    else change = -2; // 43+
+    
+    if (isWinner) change -= 1; // Event winner gets additional -1
+    return change;
+}
+
+function getHandicapChangeText(stablefordPoints, isWinner = false) {
+    const baseChange = getHandicapChange(stablefordPoints, false);
+    const totalChange = getHandicapChange(stablefordPoints, isWinner);
+    
+    let text = `${stablefordPoints} Stableford points → `;
+    
+    if (baseChange > 0) text += `+${baseChange}`;
+    else if (baseChange === 0) text += 'No change';
+    else text += `${baseChange}`;
+    
+    if (isWinner) {
+        text += ` (+ Winner bonus: -1) = ${totalChange > 0 ? '+' : ''}${totalChange}`;
+    }
+    
+    return text;
+}
+
+// ===== FIND COURSE DATA =====
+function findCourseData(venue) {
+    // Direct match first
+    if (COURSE_DATA[venue]) return COURSE_DATA[venue];
+    
+    // Partial match
+    const venueLower = venue.toLowerCase();
+    for (const [key, data] of Object.entries(COURSE_DATA)) {
+        if (venueLower.includes(key.toLowerCase()) || key.toLowerCase().includes(venueLower)) {
+            return data;
+        }
+    }
+    
+    // Try matching first word(s)
+    const venueWords = venueLower.split(' ').slice(0, 2).join(' ');
+    for (const [key, data] of Object.entries(COURSE_DATA)) {
+        if (key.toLowerCase().startsWith(venueWords)) {
+            return data;
+        }
+    }
+    
+    return null;
+}
+
+// ===== SCORECARD MODAL LOGIC =====
+let currentScorecardEventId = null;
+let currentScorecardCourseData = null;
+let currentScorecardCourseHcp = 0;
+let scorecardScores = new Array(18).fill(null);
+
+function openScorecardModal(eventId) {
+    const event = allEvents.find(e => e.id === eventId);
+    if (!event) return;
+    
+    const courseData = findCourseData(event.venue);
+    if (!courseData) {
+        showToast('Course data not available for ' + event.venue, 'error');
+        return;
+    }
+    
+    currentScorecardEventId = eventId;
+    currentScorecardCourseData = courseData;
+    scorecardScores = new Array(18).fill(null);
+    
+    // Get player's handicap
+    firebase.database().ref(`users/${currentUser.uid}`).once('value').then(snapshot => {
+        const userData = snapshot.val();
+        const handicapIndex = userData.handicap || 18;
+        currentScorecardCourseHcp = getCourseHandicap(handicapIndex, courseData.slope);
+        
+        // Check for existing scorecard
+        if (event.scorecards && event.scorecards[currentUser.uid]) {
+            const existing = event.scorecards[currentUser.uid];
+            if (existing.holeScores) {
+                scorecardScores = [...existing.holeScores];
+            }
+        }
+        
+        // Update header info
+        document.getElementById('scorecardCourse').textContent = event.venue.split(',')[0];
+        document.getElementById('scorecardHcpIndex').textContent = handicapIndex.toFixed(1);
+        document.getElementById('scorecardCourseHcp').textContent = currentScorecardCourseHcp;
+        document.getElementById('scorecardModalTitle').textContent = 'Enter Scorecard';
+        
+        // Build scorecard grid
+        buildScorecardGrid('scorecardFront9', 0, 9);
+        buildScorecardGrid('scorecardBack9', 9, 18);
+        
+        // Set front/back par
+        const front9Par = courseData.holes.slice(0, 9).reduce((s, h) => s + h.par, 0);
+        const back9Par = courseData.holes.slice(9, 18).reduce((s, h) => s + h.par, 0);
+        document.getElementById('front9Par').textContent = front9Par;
+        document.getElementById('back9Par').textContent = back9Par;
+        document.getElementById('totalPar').textContent = courseData.par;
+        
+        updateScorecardTotals();
+        
+        // Show modal
+        document.getElementById('scorecardModal').classList.add('active');
+    });
+}
+
+function buildScorecardGrid(containerId, startHole, endHole) {
+    const container = document.getElementById(containerId);
+    const courseData = currentScorecardCourseData;
+    
+    let html = '';
+    for (let i = startHole; i < endHole; i++) {
+        const hole = courseData.holes[i];
+        const strokes = getStrokesForHole(currentScorecardCourseHcp, hole.si);
+        const strokeDots = strokes > 0 ? '•'.repeat(strokes) : '';
+        const existingScore = scorecardScores[i];
+        const scoreClass = existingScore ? getScoreClass(existingScore, hole.par) : '';
+        
+        html += `
+            <div class="scorecard-hole">
+                <div class="hole-number">${i + 1}</div>
+                <div class="hole-par">P${hole.par}</div>
+                <div class="hole-si">SI ${hole.si}</div>
+                <div class="hole-strokes">${strokeDots}</div>
+                <input type="number" 
+                    class="hole-score-input ${scoreClass}" 
+                    id="holeScore${i}" 
+                    min="1" max="15" 
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    value="${existingScore || ''}"
+                    data-hole="${i}"
+                    onfocus="this.select()"
+                    oninput="handleScoreInput(this, ${i})">
+                <div class="hole-points ${existingScore ? getPointsClass(calculateStablefordPoints(existingScore, hole.par, getStrokesForHole(currentScorecardCourseHcp, hole.si))) : 'pts-0'}" id="holePoints${i}">
+                    ${existingScore ? calculateStablefordPoints(existingScore, hole.par, getStrokesForHole(currentScorecardCourseHcp, hole.si)) : '-'}
+                </div>
+            </div>
+        `;
+    }
+    container.innerHTML = html;
+}
+
+function handleScoreInput(input, holeIndex) {
+    let val = parseInt(input.value);
+    if (isNaN(val) || val < 1) {
+        scorecardScores[holeIndex] = null;
+    } else {
+        if (val > 15) val = 15;
+        scorecardScores[holeIndex] = val;
+    }
+    
+    const hole = currentScorecardCourseData.holes[holeIndex];
+    const strokes = getStrokesForHole(currentScorecardCourseHcp, hole.si);
+    const points = scorecardScores[holeIndex] ? calculateStablefordPoints(scorecardScores[holeIndex], hole.par, strokes) : 0;
+    
+    // Update score color
+    input.className = 'hole-score-input ' + (scorecardScores[holeIndex] ? getScoreClass(scorecardScores[holeIndex], hole.par) : '');
+    
+    // Update points
+    const pointsEl = document.getElementById(`holePoints${holeIndex}`);
+    pointsEl.textContent = scorecardScores[holeIndex] ? points : '-';
+    pointsEl.className = 'hole-points ' + (scorecardScores[holeIndex] ? getPointsClass(points) : 'pts-0');
+    
+    updateScorecardTotals();
+    
+    // Auto-advance to next hole
+    if (scorecardScores[holeIndex] && holeIndex < 17) {
+        const nextInput = document.getElementById(`holeScore${holeIndex + 1}`);
+        if (nextInput && input.value.length >= 1) {
+            setTimeout(() => nextInput.focus(), 150);
+        }
+    }
+}
+
+function updateScorecardTotals() {
+    const courseData = currentScorecardCourseData;
+    let front9Gross = 0, back9Gross = 0;
+    let front9Points = 0, back9Points = 0;
+    let totalGross = 0, totalPoints = 0;
+    let holesCompleted = 0;
+    
+    for (let i = 0; i < 18; i++) {
+        const score = scorecardScores[i];
+        if (score) {
+            const hole = courseData.holes[i];
+            const strokes = getStrokesForHole(currentScorecardCourseHcp, hole.si);
+            const pts = calculateStablefordPoints(score, hole.par, strokes);
+            
+            if (i < 9) {
+                front9Gross += score;
+                front9Points += pts;
+            } else {
+                back9Gross += score;
+                back9Points += pts;
+            }
+            totalGross += score;
+            totalPoints += pts;
+            holesCompleted++;
+        }
+    }
+    
+    document.getElementById('front9Gross').textContent = front9Gross || '-';
+    document.getElementById('front9Points').textContent = front9Points;
+    document.getElementById('back9Gross').textContent = back9Gross || '-';
+    document.getElementById('back9Points').textContent = back9Points;
+    document.getElementById('totalGross').textContent = totalGross || '-';
+    document.getElementById('totalStableford').textContent = totalPoints;
+    
+    // Running totals
+    document.getElementById('runningStableford').textContent = totalPoints;
+    document.getElementById('runningGross').textContent = totalGross || '-';
+    
+    const vsPar = totalGross - courseData.holes.slice(0, holesCompleted).reduce((s, h) => s + h.par, 0);
+    const vsParEl = document.getElementById('runningVsPar');
+    if (holesCompleted === 0) {
+        vsParEl.textContent = 'E';
+    } else {
+        vsParEl.textContent = vsPar === 0 ? 'E' : (vsPar > 0 ? `+${vsPar}` : `${vsPar}`);
+        vsParEl.style.color = vsPar < 0 ? 'var(--success-color)' : vsPar > 0 ? 'var(--error-color)' : '';
+    }
+    
+    // Handicap preview
+    const previewEl = document.getElementById('handicapChangePreview');
+    const detailEl = document.getElementById('hcpPreviewDetail');
+    
+    if (holesCompleted === 18) {
+        previewEl.classList.remove('hidden');
+        const change = getHandicapChange(totalPoints, false);
+        const changeText = getHandicapChangeText(totalPoints, false);
+        
+        const currentHcp = parseFloat(document.getElementById('scorecardHcpIndex').textContent);
+        const newHcp = Math.max(0, currentHcp + change);
+        
+        let colorClass = change > 0 ? 'hcp-change-positive' : change < 0 ? 'hcp-change-negative' : 'hcp-change-neutral';
+        
+        detailEl.innerHTML = `
+            <div>${changeText}</div>
+            <div class="${colorClass}" style="font-size: 18px; margin-top: 6px;">
+                ${currentHcp.toFixed(1)} → ${newHcp.toFixed(1)}
+                (${change > 0 ? '+' : ''}${change})
+            </div>
+        `;
+    } else {
+        previewEl.classList.add('hidden');
+    }
+}
+
+async function submitScorecard() {
+    const holesCompleted = scorecardScores.filter(s => s !== null).length;
+    
+    if (holesCompleted < 18) {
+        if (!confirm(`You've only completed ${holesCompleted}/18 holes. Submit anyway?`)) return;
+    }
+    
+    const courseData = currentScorecardCourseData;
+    let totalPoints = 0;
+    let totalGross = 0;
+    
+    for (let i = 0; i < 18; i++) {
+        const score = scorecardScores[i];
+        if (score) {
+            const hole = courseData.holes[i];
+            const strokes = getStrokesForHole(currentScorecardCourseHcp, hole.si);
+            totalPoints += calculateStablefordPoints(score, hole.par, strokes);
+            totalGross += score;
+        }
+    }
+    
+    try {
+        // Save scorecard to event
+        const scorecardData = {
+            holeScores: scorecardScores,
+            totalGross: totalGross,
+            stablefordPoints: totalPoints,
+            courseHandicap: currentScorecardCourseHcp,
+            handicapIndex: parseFloat(document.getElementById('scorecardHcpIndex').textContent),
+            submittedAt: new Date().toISOString()
+        };
+        
+        await firebase.database().ref(`events/${currentScorecardEventId}/scorecards/${currentUser.uid}`).set(scorecardData);
+        
+        // Also save the basic score for backwards compatibility with league
+        await firebase.database().ref(`events/${currentScorecardEventId}/scores/${currentUser.uid}`).set(totalPoints);
+        
+        // Apply handicap adjustment if all 18 holes completed
+        if (holesCompleted === 18) {
+            await applyHandicapAdjustment(totalPoints, currentScorecardEventId);
+        }
+        
+        showToast(`Scorecard submitted! ${totalPoints} Stableford points`, 'success');
+        closeAllModals();
+        
+        // Refresh event details
+        openEventDetails(currentScorecardEventId);
+        
+    } catch (error) {
+        console.error('Error submitting scorecard:', error);
+        showToast('Error submitting scorecard', 'error');
+    }
+}
+
+async function applyHandicapAdjustment(stablefordPoints, eventId) {
+    try {
+        const userRef = firebase.database().ref(`users/${currentUser.uid}`);
+        const snapshot = await userRef.once('value');
+        const userData = snapshot.val();
+        const currentHandicap = userData.handicap || 18;
+        
+        // Check if this player is the winner (determined later when all scorecards are in)
+        // For now, apply base change only. Winner bonus applied separately.
+        const change = getHandicapChange(stablefordPoints, false);
+        const newHandicap = Math.max(0, Math.min(54, currentHandicap + change));
+        
+        if (change !== 0) {
+            await userRef.update({ handicap: newHandicap });
+            
+            // Log the adjustment
+            await firebase.database().ref(`handicapHistory/${currentUser.uid}`).push({
+                eventId: eventId,
+                date: new Date().toISOString(),
+                stablefordPoints: stablefordPoints,
+                previousHandicap: currentHandicap,
+                newHandicap: newHandicap,
+                change: change,
+                isWinnerBonus: false
+            });
+            
+            const changeText = change > 0 ? `+${change}` : `${change}`;
+            showToast(`Handicap adjusted: ${currentHandicap.toFixed(1)} → ${newHandicap.toFixed(1)} (${changeText})`, change > 0 ? 'error' : 'success');
+        }
+    } catch (error) {
+        console.error('Error applying handicap adjustment:', error);
+    }
+}
+
+// ===== UPDATE EVENT DETAILS TO SHOW SCORES =====
+function renderEventScoresSummary(event) {
+    const container = document.getElementById('eventScoresSummary');
+    const enterBtn = document.getElementById('enterScorecardBtn');
+    const viewBtn = document.getElementById('viewScorecardBtn');
+    
+    const isParticipant = event.participants && event.participants[currentUser.uid];
+    const courseData = findCourseData(event.venue);
+    const hasSubmitted = event.scorecards && event.scorecards[currentUser.uid];
+    const eventDate = new Date(event.date);
+    const isPast = eventDate < new Date();
+    
+    // Show/hide enter scorecard button
+    if (isParticipant && courseData && (isPast || isToday(eventDate))) {
+        enterBtn.classList.remove('hidden');
+        enterBtn.textContent = hasSubmitted ? '✏️ Edit Scorecard' : '🏌️ Enter Scorecard';
+        enterBtn.onclick = () => openScorecardModal(event.id);
+    } else {
+        enterBtn.classList.add('hidden');
+    }
+    
+    // View scorecard button
+    if (hasSubmitted) {
+        viewBtn.classList.remove('hidden');
+        viewBtn.onclick = () => openScorecardModal(event.id);
+    } else {
+        viewBtn.classList.add('hidden');
+    }
+    
+    // Render leaderboard if there are scorecards
+    if (event.scorecards && Object.keys(event.scorecards).length > 0) {
+        const scorecards = Object.entries(event.scorecards)
+            .map(([playerId, data]) => {
+                const player = allPlayers.find(p => p.id === playerId);
+                return {
+                    playerId,
+                    name: player ? player.displayName : 'Unknown',
+                    stablefordPoints: data.stablefordPoints || 0,
+                    totalGross: data.totalGross || 0,
+                    courseHandicap: data.courseHandicap || 0
+                };
+            })
+            .sort((a, b) => b.stablefordPoints - a.stablefordPoints);
+        
+        let html = `
+            <div class="scores-leaderboard">
+                <div class="score-leaderboard-row header">
+                    <span>#</span>
+                    <span>Player</span>
+                    <span>Gross</span>
+                    <span>Pts</span>
+                </div>
+        `;
+        
+        scorecards.forEach((sc, index) => {
+            const posClass = index === 0 ? 'pos-1' : index === 1 ? 'pos-2' : index === 2 ? 'pos-3' : '';
+            const isMe = sc.playerId === currentUser.uid;
+            
+            html += `
+                <div class="score-leaderboard-row ${isMe ? 'current-user' : ''}">
+                    <span class="score-position ${posClass}">${index + 1}</span>
+                    <span class="score-player-name">${sc.name} <small style="color:var(--text-secondary);">(${sc.courseHandicap})</small></span>
+                    <span class="score-gross">${sc.totalGross}</span>
+                    <span class="score-stableford">${sc.stablefordPoints}</span>
+                </div>
+            `;
+        });
+        
+        html += `</div>`;
+        
+        // Add handicap rules info button
+        html += `<div style="text-align: center; margin-top: 8px;">
+            <button class="hcp-info-btn" onclick="document.getElementById('handicapRulesModal').classList.add('active')" title="View handicap rules">ℹ</button>
+            <span style="font-size: 12px; color: var(--text-secondary); margin-left: 4px;">Auto-handicap rules</span>
+        </div>`;
+        
+        container.innerHTML = html;
+    } else {
+        if (isPast && courseData) {
+            container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px;">No scorecards submitted yet</div>';
+        } else if (!courseData) {
+            container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 12px; font-size: 13px;">Course data not available for scoring</div>';
+        } else {
+            container.innerHTML = '';
+        }
+    }
+}
+
+function isToday(date) {
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
+}
+
+// ===== UPDATE LEAGUE STANDINGS TO USE STABLEFORD =====
+// ===== ORDER OF MERIT POINTS TABLE =====
+const OOM_POINTS = [15, 12, 10, 8, 6, 5, 4, 3, 2, 1]; // Positions 1-10
+const OOM_BEST_OF = 5; // Best 5 event scores count
+
+async function loadLeagueStandingsV2(season = '2026') {
+    try {
+        const leagueEvents = allEvents.filter(event => {
+            const eventYear = new Date(event.date).getFullYear().toString();
+            return eventYear === season && event.countsForLeague;
+        }).sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        // Build per-event results: for each event, rank players by Stableford and assign OOM points
+        const playerEventPoints = {}; // { playerId: [{ eventId, eventName, stableford, oomPoints, position, isCounted }] }
+        
+        for (const player of allPlayers) {
+            playerEventPoints[player.id] = [];
+        }
+        
+        for (const event of leagueEvents) {
+            let rankedPlayers = [];
+            
+            // Get Stableford scores from scorecards (preferred) or legacy scores
+            if (event.scorecards) {
+                rankedPlayers = Object.entries(event.scorecards)
+                    .map(([playerId, data]) => ({
+                        playerId,
+                        stableford: data.stablefordPoints || data.stableford || 0
+                    }))
+                    .filter(p => p.stableford > 0)
+                    .sort((a, b) => b.stableford - a.stableford);
+            } else if (event.scores) {
+                rankedPlayers = Object.entries(event.scores)
+                    .map(([playerId, stableford]) => ({ playerId, stableford }))
+                    .filter(p => p.stableford > 0)
+                    .sort((a, b) => b.stableford - a.stableford);
+            }
+            
+            // Assign OOM points by position (top 10 only)
+            rankedPlayers.forEach((entry, index) => {
+                const oomPts = index < OOM_POINTS.length ? OOM_POINTS[index] : 0;
+                if (playerEventPoints[entry.playerId]) {
+                    playerEventPoints[entry.playerId].push({
+                        eventId: event.id,
+                        eventName: event.name,
+                        venue: event.venue,
+                        date: event.date,
+                        stableford: entry.stableford,
+                        oomPoints: oomPts,
+                        position: index + 1,
+                        isCounted: false // will be set below
+                    });
+                }
+            });
+        }
+        
+        // For each player, determine best 5 events
+        const standings = [];
+        
+        for (const [playerId, events] of Object.entries(playerEventPoints)) {
+            if (events.length === 0) continue;
+            
+            const player = allPlayers.find(p => p.id === playerId);
+            if (!player) continue;
+            
+            // Sort by OOM points descending to find best 5
+            const sortedEvents = [...events].sort((a, b) => b.oomPoints - a.oomPoints);
+            
+            // Mark best 5 as counted
+            sortedEvents.forEach((ev, i) => {
+                ev.isCounted = i < OOM_BEST_OF;
+            });
+            
+            // Also mark them in the original chronological array
+            const countedEventIds = new Set(
+                sortedEvents.filter(e => e.isCounted).map(e => e.eventId)
+            );
+            events.forEach(ev => {
+                ev.isCounted = countedEventIds.has(ev.eventId);
+            });
+            
+            const totalOomPoints = sortedEvents
+                .filter(e => e.isCounted)
+                .reduce((sum, e) => sum + e.oomPoints, 0);
+            
+            const totalStableford = events.reduce((sum, e) => sum + e.stableford, 0);
+            const bestRound = Math.max(...events.map(e => e.stableford), 0);
+            
+            standings.push({
+                id: playerId,
+                name: player.displayName,
+                handicap: player.handicap,
+                oomPoints: totalOomPoints,
+                totalStableford: totalStableford,
+                eventsPlayed: events.length,
+                bestRound: bestRound,
+                eventResults: events // chronological
+            });
+        }
+        
+        // Sort: OOM points desc, then total Stableford desc as tiebreaker
+        standings.sort((a, b) => b.oomPoints - a.oomPoints || b.totalStableford - a.totalStableford);
+        
+        renderOOMTable(standings, leagueEvents);
+        
+    } catch (error) {
+        console.error('Error loading OOM standings:', error);
+    }
+}
+
+function renderOOMTable(standings, leagueEvents) {
+    const container = document.getElementById('leagueTable');
+    const breakdownContainer = document.getElementById('oomEventBreakdown');
+    const eventsPlayed = leagueEvents.filter(e => {
+        return e.scorecards && Object.keys(e.scorecards).length > 0 ||
+               e.scores && Object.keys(e.scores).length > 0;
+    }).length;
+    
+    // Update header stats
+    document.getElementById('totalEvents').textContent = `${eventsPlayed} / ${leagueEvents.length}`;
+    
+    const userStanding = standings.find(s => s.id === currentUser.uid);
+    if (userStanding) {
+        const userPos = standings.indexOf(userStanding) + 1;
+        document.getElementById('userPosition').textContent = userPos <= 3 
+            ? ['🥇','🥈','🥉'][userPos - 1] + ' ' + userPos 
+            : userPos;
+        document.getElementById('userPoints').textContent = userStanding.oomPoints;
+    } else {
+        document.getElementById('userPosition').textContent = '-';
+        document.getElementById('userPoints').textContent = '0';
+    }
+    
+    if (standings.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🏆</div>
+                <div class="empty-state-text">No results yet this season</div>
+            </div>`;
+        breakdownContainer.innerHTML = '';
+        return;
+    }
+    
+    // Build short event name headers for the breakdown columns
+    const eventHeaders = leagueEvents.map(e => {
+        const shortName = e.venue.split(' ')[0].replace(',', '');
+        return { id: e.id, short: shortName, date: e.date };
+    });
+    
+    // Main standings table
+    let html = `
+        <div class="oom-table">
+            <div class="oom-row oom-header">
+                <div class="oom-pos">#</div>
+                <div class="oom-player">Player</div>
+                <div class="oom-total">OOM</div>
+                <div class="oom-played">Played</div>
+                <div class="oom-best">Best</div>
+            </div>
+    `;
+    
+    standings.forEach((player, index) => {
+        const pos = index + 1;
+        const isMe = player.id === currentUser.uid;
+        const posDisplay = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : pos;
+        const initials = player.name.split(' ').map(n => n[0]).join('');
+        
+        html += `
+            <div class="oom-row ${isMe ? 'oom-current-user' : ''}" onclick="togglePlayerBreakdown('${player.id}')">
+                <div class="oom-pos">${posDisplay}</div>
+                <div class="oom-player">
+                    <div class="oom-avatar">${initials}</div>
+                    <div class="oom-player-info">
+                        <div class="oom-name">${player.name}</div>
+                        <div class="oom-hcp">HCP ${player.handicap}</div>
+                    </div>
+                </div>
+                <div class="oom-total">${player.oomPoints}</div>
+                <div class="oom-played">${player.eventsPlayed}</div>
+                <div class="oom-best">${player.bestRound}</div>
+            </div>
+            <div class="oom-breakdown hidden" id="breakdown-${player.id}">
+                ${renderPlayerBreakdown(player, eventHeaders)}
+            </div>
+        `;
+    });
+    
+    html += `</div>`;
+    container.innerHTML = html;
+    
+    // Event-by-event results cards
+    let breakdownHtml = '<h3 class="oom-section-title">Event Results</h3>';
+    
+    leagueEvents.forEach(event => {
+        const hasResults = (event.scorecards && Object.keys(event.scorecards).length > 0) ||
+                           (event.scores && Object.keys(event.scores).length > 0);
+        const eventDate = new Date(event.date);
+        const isPast = eventDate < new Date();
+        const shortDate = eventDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        
+        if (!hasResults) {
+            if (!isPast) {
+                breakdownHtml += `
+                    <div class="oom-event-card upcoming">
+                        <div class="oom-event-header">
+                            <span class="oom-event-name">${event.name}</span>
+                            <span class="oom-event-date">${shortDate}</span>
+                        </div>
+                        <div class="oom-event-status">Upcoming</div>
+                    </div>`;
+            }
+            return;
+        }
+        
+        // Get ranked results for this event
+        let results = [];
+        if (event.scorecards) {
+            results = Object.entries(event.scorecards)
+                .map(([pid, data]) => ({
+                    pid,
+                    stableford: data.stablefordPoints || data.stableford || 0
+                }))
+                .filter(r => r.stableford > 0)
+                .sort((a, b) => b.stableford - a.stableford);
+        } else if (event.scores) {
+            results = Object.entries(event.scores)
+                .map(([pid, stableford]) => ({ pid, stableford }))
+                .filter(r => r.stableford > 0)
+                .sort((a, b) => b.stableford - a.stableford);
+        }
+        
+        breakdownHtml += `
+            <div class="oom-event-card">
+                <div class="oom-event-header">
+                    <span class="oom-event-name">${event.name}</span>
+                    <span class="oom-event-date">${shortDate}</span>
+                </div>
+                <div class="oom-event-results">
+        `;
+        
+        results.forEach((r, i) => {
+            const player = allPlayers.find(p => p.id === r.pid);
+            const name = player ? player.displayName : 'Unknown';
+            const pts = i < OOM_POINTS.length ? OOM_POINTS[i] : 0;
+            const posClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+            const isMe = r.pid === currentUser.uid;
+            
+            breakdownHtml += `
+                <div class="oom-result-row ${isMe ? 'oom-result-me' : ''}">
+                    <span class="oom-result-pos ${posClass}">${i + 1}</span>
+                    <span class="oom-result-name">${name}</span>
+                    <span class="oom-result-stableford">${r.stableford} pts</span>
+                    <span class="oom-result-oom ${pts > 0 ? 'has-pts' : ''}">${pts > 0 ? '+' + pts : '-'}</span>
+                </div>
+            `;
+        });
+        
+        breakdownHtml += `</div></div>`;
+    });
+    
+    breakdownContainer.innerHTML = breakdownHtml;
+    
+    // Wire up the "How it works" toggle
+    const toggle = document.getElementById('oomRulesToggle');
+    if (toggle) {
+        toggle.onclick = () => {
+            const content = document.getElementById('oomRulesContent');
+            content.classList.toggle('hidden');
+            toggle.textContent = content.classList.contains('hidden') 
+                ? 'How it works ▾' : 'How it works ▴';
+        };
+    }
+}
+
+function renderPlayerBreakdown(player, eventHeaders) {
+    if (!player.eventResults || player.eventResults.length === 0) {
+        return '<div class="oom-no-results">No results</div>';
+    }
+    
+    let html = '<div class="oom-player-events">';
+    
+    player.eventResults.forEach(ev => {
+        const shortVenue = ev.venue ? ev.venue.split(' ')[0].replace(',', '') : ev.eventName;
+        const evDate = new Date(ev.date);
+        const shortDate = evDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        const countedClass = ev.isCounted ? 'counted' : 'dropped';
+        
+        html += `
+            <div class="oom-player-event ${countedClass}">
+                <div class="oom-pe-info">
+                    <span class="oom-pe-venue">${shortVenue}</span>
+                    <span class="oom-pe-date">${shortDate}</span>
+                </div>
+                <div class="oom-pe-scores">
+                    <span class="oom-pe-pos">${getOrdinal(ev.position)}</span>
+                    <span class="oom-pe-stableford">${ev.stableford} pts</span>
+                    <span class="oom-pe-oom ${ev.oomPoints > 0 ? 'has-pts' : ''}">${ev.oomPoints > 0 ? '+' + ev.oomPoints : '-'}</span>
+                </div>
+                ${!ev.isCounted ? '<span class="oom-pe-dropped">dropped</span>' : ''}
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    return html;
+}
+
+function togglePlayerBreakdown(playerId) {
+    const el = document.getElementById(`breakdown-${playerId}`);
+    if (el) el.classList.toggle('hidden');
+}
+
+function getOrdinal(n) {
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+// (duplicate findCourseData removed — using version above)
+
+// (System 2 scoring code removed — using scorecardModal system above with society auto-handicap rules)
+

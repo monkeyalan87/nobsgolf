@@ -125,7 +125,7 @@
             </button>
             <button class="nav-btn" data-view="league">
                 <span class="nav-icon">🏆</span>
-                <span class="nav-label">League</span>
+                <span class="nav-label">Merit</span>
             </button>
             <button class="nav-btn" data-view="players">
                 <span class="nav-icon">👥</span>
@@ -191,32 +191,54 @@
                 <div id="eventsList" class="events-list"></div>
             </div>
 
-            <!-- League View -->
+            <!-- League / Order of Merit View -->
             <div id="leagueView" class="view">
                 <div class="view-header">
-                    <h2>League Standings</h2>
+                    <h2>Order of Merit</h2>
                     <select id="leagueSeasonFilter" class="season-filter">
+                        <option value="2026">2026 Season</option>
                         <option value="2025">2025 Season</option>
-                        <option value="2024">2024 Season</option>
                     </select>
                 </div>
                 
-                <div class="league-stats">
-                    <div class="stat-card">
-                        <div class="stat-label">Total Events</div>
-                        <div class="stat-value" id="totalEvents">0</div>
+                <div class="oom-info-bar">
+                    <div class="oom-info-item">
+                        <span class="oom-info-label">Events Played</span>
+                        <span class="oom-info-value" id="totalEvents">0</span>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Your Position</div>
-                        <div class="stat-value" id="userPosition">-</div>
+                    <div class="oom-info-item">
+                        <span class="oom-info-label">Your Position</span>
+                        <span class="oom-info-value" id="userPosition">-</span>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Your Points</div>
-                        <div class="stat-value" id="userPoints">0</div>
+                    <div class="oom-info-item">
+                        <span class="oom-info-label">Your OOM Pts</span>
+                        <span class="oom-info-value" id="userPoints">0</span>
+                    </div>
+                </div>
+                
+                <div class="oom-explanation">
+                    <button class="oom-rules-toggle" id="oomRulesToggle">How it works ▾</button>
+                    <div class="oom-rules-content hidden" id="oomRulesContent">
+                        <p>Points are awarded to the <strong>top 10 finishers</strong> at each league event based on Stableford position:</p>
+                        <div class="oom-points-grid">
+                            <span>1st</span><span class="oom-pts-badge gold">15</span>
+                            <span>2nd</span><span class="oom-pts-badge silver">12</span>
+                            <span>3rd</span><span class="oom-pts-badge bronze">10</span>
+                            <span>4th</span><span class="oom-pts-badge">8</span>
+                            <span>5th</span><span class="oom-pts-badge">6</span>
+                            <span>6th</span><span class="oom-pts-badge">5</span>
+                            <span>7th</span><span class="oom-pts-badge">4</span>
+                            <span>8th</span><span class="oom-pts-badge">3</span>
+                            <span>9th</span><span class="oom-pts-badge">2</span>
+                            <span>10th</span><span class="oom-pts-badge">1</span>
+                        </div>
+                        <p>Your <strong>best 5 event scores</strong> count toward the final Order of Merit standings.</p>
                     </div>
                 </div>
                 
                 <div id="leagueTable" class="league-table"></div>
+                
+                <div id="oomEventBreakdown" class="oom-event-breakdown"></div>
             </div>
 
             <!-- Players View -->
@@ -400,13 +422,16 @@
                 </div>
                 
                 <div class="scores-section">
-                    <h4>Scores</h4>
-                    <div id="scoresInput"></div>
-                    <button id="saveScoresBtn" class="primary-btn small">Save Scores</button>
+                    <h4>Scores & Results</h4>
+                    <div id="eventScoresSummary"></div>
+                    <button id="enterScorecardBtn" class="primary-btn small hidden">🏌️ Enter Scorecard</button>
+                    <button id="viewScorecardBtn" class="secondary-btn small hidden">📋 View My Scorecard</button>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- (Score Entry Modal removed - using Scorecard Modal below) -->
 
     <!-- Edit Profile Modal -->
     <div id="editProfileModal" class="modal">
@@ -436,6 +461,114 @@
             <div class="modal-footer">
                 <button class="secondary-btn modal-close">Cancel</button>
                 <button id="saveProfileBtn" class="primary-btn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scorecard Entry Modal -->
+    <div id="scorecardModal" class="modal">
+        <div class="modal-content large scorecard-modal">
+            <div class="modal-header">
+                <h3 id="scorecardModalTitle">Enter Scorecard</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="scorecard-info-bar">
+                    <div class="scorecard-info-item">
+                        <span class="scorecard-info-label">Course</span>
+                        <span class="scorecard-info-value" id="scorecardCourse">-</span>
+                    </div>
+                    <div class="scorecard-info-item">
+                        <span class="scorecard-info-label">HCP Index</span>
+                        <span class="scorecard-info-value" id="scorecardHcpIndex">-</span>
+                    </div>
+                    <div class="scorecard-info-item">
+                        <span class="scorecard-info-label">Course HCP</span>
+                        <span class="scorecard-info-value" id="scorecardCourseHcp">-</span>
+                    </div>
+                </div>
+                
+                <div class="scorecard-running-totals">
+                    <div class="running-total-item">
+                        <span class="running-total-label">Stableford</span>
+                        <span class="running-total-value" id="runningStableford">0</span>
+                    </div>
+                    <div class="running-total-item">
+                        <span class="running-total-label">Gross</span>
+                        <span class="running-total-value" id="runningGross">0</span>
+                    </div>
+                    <div class="running-total-item">
+                        <span class="running-total-label">Vs Par</span>
+                        <span class="running-total-value" id="runningVsPar">E</span>
+                    </div>
+                </div>
+                
+                <div class="scorecard-half-label">Front 9</div>
+                <div id="scorecardFront9" class="scorecard-grid"></div>
+                
+                <div class="scorecard-half-summary" id="front9Summary">
+                    <span>OUT</span>
+                    <span id="front9Par">-</span>
+                    <span id="front9Gross">-</span>
+                    <span id="front9Points">0</span>
+                </div>
+                
+                <div class="scorecard-half-label">Back 9</div>
+                <div id="scorecardBack9" class="scorecard-grid"></div>
+                
+                <div class="scorecard-half-summary" id="back9Summary">
+                    <span>IN</span>
+                    <span id="back9Par">-</span>
+                    <span id="back9Gross">-</span>
+                    <span id="back9Points">0</span>
+                </div>
+                
+                <div class="scorecard-totals-row">
+                    <span>TOTAL</span>
+                    <span id="totalPar">-</span>
+                    <span id="totalGross">-</span>
+                    <span id="totalStableford" class="stableford-total">0</span>
+                </div>
+                
+                <div id="handicapChangePreview" class="handicap-change-preview hidden">
+                    <div class="hcp-preview-title">Handicap Adjustment</div>
+                    <div class="hcp-preview-detail" id="hcpPreviewDetail"></div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="secondary-btn modal-close">Cancel</button>
+                <button id="submitScorecardBtn" class="primary-btn">Submit Scorecard</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Handicap Rules Modal -->
+    <div id="handicapRulesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Auto-Handicap Rules</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="hcp-rules-table">
+                    <div class="hcp-rules-header">
+                        <span>Stableford Points</span>
+                        <span>HCP Change</span>
+                    </div>
+                    <div class="hcp-rules-row"><span>0 – 17</span><span class="hcp-up">+2</span></div>
+                    <div class="hcp-rules-row"><span>18 – 29</span><span class="hcp-up">+1</span></div>
+                    <div class="hcp-rules-row"><span>30 – 37</span><span class="hcp-neutral">No change</span></div>
+                    <div class="hcp-rules-row"><span>38 – 42</span><span class="hcp-down">-1</span></div>
+                    <div class="hcp-rules-row"><span>43+</span><span class="hcp-down">-2</span></div>
+                    <div class="hcp-rules-divider"></div>
+                    <div class="hcp-rules-row"><span><strong>Event Winner</strong></span><span class="hcp-down"><strong>-1</strong></span></div>
+                    <div class="hcp-rules-example">e.g. a 43 pt winner: -3 hcp change</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="primary-btn modal-close">Close</button>
             </div>
         </div>
     </div>
